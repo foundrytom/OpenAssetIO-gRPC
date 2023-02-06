@@ -14,32 +14,30 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 
-
 class ManagerProxyImpl final : public openassetio_grpc::ManagerProxy::Service {
-	public:
-
-    Status Identifiers([[maybe_unused]] ServerContext* context, [[maybe_unused]] const openassetio_grpc::Empty* request, ::openassetio_grpc::IdentifiersResponse* response) override {
-		response->add_identifer("com.manager.a");
-		response->add_identifer("com.manager.b");
-		return Status::OK;		
-	};
-
+ public:
+  Status Identifiers([[maybe_unused]] ServerContext* context,
+                     [[maybe_unused]] const openassetio_grpc::Empty* request,
+                     ::openassetio_grpc::IdentifiersResponse* response) override {
+    response->add_identifer("com.manager.a");
+    response->add_identifer("com.manager.b");
+    return Status::OK;
+  };
 };
 
+void runServer() {
+  std::string serverAddress("0.0.0.0:50051");
+  ManagerProxyImpl service;
 
-void RunServer() {
-	std::string server_address("0.0.0.0:50051");
-	ManagerProxyImpl service;
-
-	ServerBuilder builder;
-	builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-	builder.RegisterService(&service);
-	std::unique_ptr<Server> server(builder.BuildAndStart());
-	std::cout << "Server listening on " << server_address << std::endl;
-	server->Wait();
+  ServerBuilder builder;
+  builder.AddListeningPort(serverAddress, grpc::InsecureServerCredentials());
+  builder.RegisterService(&service);
+  std::unique_ptr<Server> server(builder.BuildAndStart());
+  std::cout << "Server listening on " << serverAddress << std::endl;
+  server->Wait();
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
-  RunServer();
+  runServer();
   return 0;
 }
