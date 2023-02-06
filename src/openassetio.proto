@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2013-2023 The Foundry Visionmongers Ltd
+syntax = "proto3";
+
+package openassetio_grpc;
+
+message Empty {}
+
+message IdentifiersResponse {
+	repeated string identifer = 1;
+};
+
+service ManagerProxy  {
+	rpc Identifiers(Empty) returns (IdentifiersResponse);
+};
