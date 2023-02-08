@@ -21,6 +21,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
   for (const std::string& identifier : factory.identifiers()) {
     logger->info(identifier);
   }
+  logger->info("Done");
 
   return 0;
 }
