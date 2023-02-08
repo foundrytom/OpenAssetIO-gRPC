@@ -6,18 +6,41 @@
 #include <string>
 #include <vector>
 
+#include <openassetio/typedefs.hpp>
+#include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
+
 #include "openassetio-grpc/export.h"
 
 namespace openassetio::grpc {
 
+// Forward declare our implementation
 class GRPCManagerImplementationFactoryClient;
 
-class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final {
- public:
-  explicit GRPCManagerImplementationFactory(const std::string& channel);
-  ~GRPCManagerImplementationFactory();
+/*
+ * Relay OpenAssetIO API requests our-of-process using gRPC/Protobuf.
+ *
+ *
+ * The GRPCManagerImplementationFactory provides an alternate
+ * implementation factory for the OpenAssetIO ManagerFactory.
+ *
+ * It proxies to an out-of-process server to decouples the runtime
+ * dependencies of any given Manager implementation from those of the
+ * Host.
+ *
+ * Managers instantiated using this factory are gRPC wrappers to an
+ * instance constructed within the remote server.
+ */
 
-  [[nodiscard]] std::vector<std::string> identifiers();
+class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
+    : public hostApi::ManagerImplementationFactoryInterface {
+ public:
+  explicit GRPCManagerImplementationFactory(const std::string& channel,
+                                            log::LoggerInterfacePtr logger);
+
+  ~GRPCManagerImplementationFactory() override;
+
+  [[nodiscard]] Identifiers identifiers() override;
+  [[nodiscard]] managerApi::ManagerInterfacePtr instantiate(const Identifier& identifier) override;
 
  private:
   std::unique_ptr<GRPCManagerImplementationFactoryClient> client_;

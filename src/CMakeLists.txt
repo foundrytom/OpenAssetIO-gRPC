@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2013-2023 The Foundry Visionmongers Ltd
 
+# Fine OpenAssetIO as a CMake package
+find_package(OpenAssetIO REQUIRED)
+
 # Find Protobuf installation Looks for protobuf-config.cmake file installed by
 # Protobuf's cmake installation.
 set(protobuf_MODULE_COMPATIBLE TRUE)

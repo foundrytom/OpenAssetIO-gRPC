@@ -2,16 +2,24 @@
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
 
+#include <openassetio/log/ConsoleLogger.hpp>
+#include <openassetio/log/SeverityFilter.hpp>
+
 #include <openassetio-grpc/GRPCManagerImplementationFactory.hpp>
+
+using openassetio::log::ConsoleLogger;
+using openassetio::log::SeverityFilter;
 
 using openassetio::grpc::GRPCManagerImplementationFactory;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
-  GRPCManagerImplementationFactory factory("0.0.0.0:50051");
+  openassetio::log::LoggerInterfacePtr logger = SeverityFilter::make(ConsoleLogger::make());
 
-  std::cout << "identifiers()" << std::endl;
+  GRPCManagerImplementationFactory factory("0.0.0.0:50051", logger);
+
+  logger->info("identifiers()");
   for (const std::string& identifier : factory.identifiers()) {
-    std::cout << identifier << std::endl;
+    logger->info(identifier);
   }
 
   return 0;

@@ -54,6 +54,7 @@ target_include_directories(
 
 target_link_libraries(${LIB_TARGET_NAME}
     PRIVATE
+    OpenAssetIO::openassetio-core
 	openassetio_grpc_grpc_proto
 	${_REFLECTION}
 	${_GRPC_GRPCPP}
