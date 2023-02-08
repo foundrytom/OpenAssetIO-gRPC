@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
+#include <sstream>
+#include <map>
 
 #include <Python.h>
 
@@ -9,10 +11,10 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include <openassetio/hostApi/HostInterface.hpp>
-#include <openassetio/hostApi/ManagerFactory.hpp>
+#include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
 #include <openassetio/log/ConsoleLogger.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
+#include <openassetio/managerApi/ManagerInterface.hpp>
 #include <openassetio/python/hostApi.hpp>
 
 #include "openassetio.grpc.pb.h"
@@ -22,56 +24,70 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 
-using openassetio::hostApi::ManagerFactory;
-using openassetio::hostApi::ManagerFactoryPtr;
 using openassetio::log::ConsoleLogger;
 using openassetio::log::SeverityFilter;
+using openassetio::managerApi::ManagerInterfacePtr;
 
-class TestHostInterface : public openassetio::hostApi::HostInterface {
-  [[nodiscard]] openassetio::Identifier identifier() const override {
-    return "org.openassetio.gRPC.testHost";
-  }
-
-  [[nodiscard]] openassetio::Str displayName() const override {
-    return "OpenAssetIO gRPC Test Host";
-  }
-};
 
 class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Service {
  public:
-  explicit ManagerProxyImpl(openassetio::log::LoggerInterfacePtr logger) : logger_(std::move(logger)) {
-    logger_->debug("Creating TestHostInterface");
-    const auto hostInterface = std::make_shared<TestHostInterface>();
-    logger_->debug("Creating PythonPluginSystemManagerImplementationFactory");
-    const auto pythonImplementationFactory =
+  explicit ManagerProxyImpl(openassetio::log::LoggerInterfacePtr logger)
+      : logger_(std::move(logger)) {
+    implementationFactory_ =
         openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(
             logger_);
-    logger_->debug("Creating ManagerFactory");
-    managerFactory_ = ManagerFactory::make(hostInterface, pythonImplementationFactory, logger_);
   }
 
   Status Identifiers([[maybe_unused]] ServerContext* context,
                      [[maybe_unused]] const openassetio_grpc_proto::EmptyRequest* request,
                      ::openassetio_grpc_proto::IdentifiersResponse* response) override {
-    logger_->debug("Idenfifiers called");
-    for (const openassetio::Identifier& identifier : managerFactory_->identifiers()) {
+    for (const openassetio::Identifier& identifier : implementationFactory_->identifiers()) {
       response->add_identifer(identifier);
-      logger_->debug(identifier);
     }
-    logger_->debug("OK");
     return Status::OK;
   };
 
+  Status Instantiate([[maybe_unused]] ServerContext* context,
+                     const openassetio_grpc_proto::InstantiateRequest* request,
+                     ::openassetio_grpc_proto::InstantiateResponse* response) override {
+    const openassetio::Identifier& identifier = request->identifier();
+    // TODO(tc) Handle exceptions here
+    const ManagerInterfacePtr managerInterface =
+        implementationFactory_->instantiate(identifier);
+    std::stringstream handle;
+    handle << static_cast<void const *>(managerInterface.get());
+    managers_.insert({handle.str(), managerInterface});
+    response->set_remotehandle(handle.str());
+    logger_->debugApi("Instantiated " + identifier + " with handle " + handle.str());
+    return Status::OK;
+  }
+
+  Status Destroy([[maybe_unused]] ServerContext* context,
+                 const openassetio_grpc_proto::DestroyRequest* request,
+                 [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse * response) override {
+
+    const auto& iter = managers_.find(request->remotehandle());
+    if (iter == managers_.end()) {
+      // TODO(tc): Error handling
+      logger_->warning("Requested to destroy non-existent handle " + request->remotehandle());
+      return Status::OK;
+    }
+    managers_.erase(iter);
+    logger_->debugApi("Destoryed " + request->remotehandle());
+    return Status::OK;
+}
+
+
  private:
   openassetio::log::LoggerInterfacePtr logger_;
-  ManagerFactoryPtr managerFactory_;
+  openassetio::hostApi::ManagerImplementationFactoryInterfacePtr implementationFactory_;
+  std::map<std::string, ManagerInterfacePtr> managers_;
 };
 
 void runServer() {
   Py_Initialize();
   {
-    Py_BEGIN_ALLOW_THREADS
-    auto logger = SeverityFilter::make(ConsoleLogger::make());
+    Py_BEGIN_ALLOW_THREADS auto logger = SeverityFilter::make(ConsoleLogger::make());
     std::string serverAddress("0.0.0.0:50051");
     ManagerProxyImpl service{logger};
 

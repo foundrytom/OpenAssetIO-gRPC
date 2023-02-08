@@ -5,11 +5,31 @@ syntax = "proto3";
 package openassetio_grpc_proto;
 
 message EmptyRequest {}
+message EmptyResponse {}
+
 
 message IdentifiersResponse {
 	repeated string identifer = 1;
 };
 
+
+message InstantiateRequest {
+    string identifier = 1;
+}
+
+message InstantiateResponse {
+    string remoteHandle = 1;
+}
+
+
+message DestroyRequest {
+    string remoteHandle = 1;
+}
+
+
 service ManagerProxy  {
 	rpc Identifiers(EmptyRequest) returns (IdentifiersResponse);
+    rpc Instantiate(InstantiateRequest) returns (InstantiateResponse);
+    rpc Destroy(DestroyRequest) returns (EmptyResponse);
 };
+

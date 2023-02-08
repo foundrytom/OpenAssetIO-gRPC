@@ -16,6 +16,8 @@ namespace openassetio::grpc {
 // Forward declare our implementation
 class GRPCManagerImplementationFactoryClient;
 
+OPENASSETIO_DECLARE_PTR(GRPCManagerImplementationFactory)
+
 /*
  * Relay OpenAssetIO API requests our-of-process using gRPC/Protobuf.
  *
@@ -44,6 +46,7 @@ class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
 
  private:
   std::unique_ptr<GRPCManagerImplementationFactoryClient> client_;
+  std::string channel_;
 };
 
 }  // namespace openassetio::grpc

@@ -9,31 +9,29 @@
 #include <grpcpp/grpcpp.h>
 
 #include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
+#include <openassetio/log/LoggerInterface.hpp>
 
 #include "openassetio.grpc.pb.h"
+
+#include "openassetio-grpc/GRPCManagerInterface.hpp"
 
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-
-using openassetio_grpc_proto::EmptyRequest;
-using openassetio_grpc_proto::IdentifiersResponse;
-using openassetio_grpc_proto::ManagerProxy;
 
 namespace openassetio::grpc {
 
 class GRPCManagerImplementationFactoryClient {
  public:
   explicit GRPCManagerImplementationFactoryClient(std::shared_ptr<Channel> channel)
-      : stub_(ManagerProxy::NewStub(std::move(channel))) {}
+      : stub_(openassetio_grpc_proto::ManagerProxy::NewStub(std::move(channel))) {}
 
   std::vector<std::string> identifiers() {
-    EmptyRequest request;
-    IdentifiersResponse response;
-
+    openassetio_grpc_proto::EmptyRequest request;
+    openassetio_grpc_proto::IdentifiersResponse response;
     ClientContext context;
-    Status status = stub_->Identifiers(&context, request, &response);
 
+    Status status = stub_->Identifiers(&context, request, &response);
     if (!status.ok()) {
       throw std::runtime_error(status.error_message());
     }
@@ -47,15 +45,31 @@ class GRPCManagerImplementationFactoryClient {
     return identifiers;
   }
 
+  GRPCManagerInterface::RemoteHandle instantiate(const openassetio::Identifier& identifier) {
+    openassetio_grpc_proto::InstantiateRequest request;
+    openassetio_grpc_proto::InstantiateResponse response;
+    ClientContext context;
+
+    request.set_identifier(identifier);
+
+    Status status = stub_->Instantiate(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    return GRPCManagerInterface::RemoteHandle(response.remotehandle());
+  }
+
  private:
-  std::unique_ptr<ManagerProxy::Stub> stub_;
+  std::unique_ptr<openassetio_grpc_proto::ManagerProxy::Stub> stub_;
 };
 
 GRPCManagerImplementationFactory::GRPCManagerImplementationFactory(const std::string& channel,
                                                                    log::LoggerInterfacePtr logger)
     : ManagerImplementationFactoryInterface(std::move(logger)),
       client_(new GRPCManagerImplementationFactoryClient(
-          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()))) {}
+          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()))),
+      channel_(channel) {}
 
 GRPCManagerImplementationFactory::~GRPCManagerImplementationFactory() = default;
 
@@ -63,7 +77,9 @@ Identifiers GRPCManagerImplementationFactory::identifiers() { return client_->id
 
 managerApi::ManagerInterfacePtr GRPCManagerImplementationFactory::instantiate(
     [[maybe_unused]] const Identifier& identifier) {
-  throw std::runtime_error("instantiate not implemented");
+  GRPCManagerInterface::RemoteHandle handle = client_->instantiate(identifier);
+  logger_->debugApi("Instantiated '" + identifier + "' [" + handle + "]");
+  return std::make_shared<GRPCManagerInterface>(handle, channel_);
 }
 
 }  // namespace openassetio::grpc

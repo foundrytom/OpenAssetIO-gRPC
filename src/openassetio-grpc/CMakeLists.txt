@@ -39,7 +39,8 @@ install(
 target_sources(
     ${LIB_TARGET_NAME}
     PRIVATE
-    src/GRPCManagerImplementationFactory.cpp)
+    src/GRPCManagerImplementationFactory.cpp
+    src/GRPCManagerInterface.cpp)
 
 target_include_directories(
     ${LIB_TARGET_NAME}
