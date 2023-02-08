@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 
+# Define default install directories, e.g. CMAKE_INSTALL_LIBDIR
+
+include(GNUInstallDirs)
+
 project(OpenAssetIO-gRPC VERSION 1.0.0)
 
 
@@ -28,8 +32,10 @@ option(OPENASSETIO_GRPC_GLIBCXX_USE_CXX11_ABI "For gcc, use the new C++11 librar
 endif ()
 
 set(OPENASSETIO_GRPC_GLIBCXX_USE_CXX12_ABI OFF)
+set(BUILD_SHARED_LIBS ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 include(DefaultTargetProperties)
 
