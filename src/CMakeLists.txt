@@ -45,7 +45,7 @@ add_custom_command(
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-add_library(openassetio_grpc_grpc_proto
+add_library(openassetio_grpc_grpc_proto STATIC
   ${openassetio_grpc_grpc_srcs}
   ${openassetio_grpc_grpc_hdrs}
   ${openassetio_grpc_proto_srcs}

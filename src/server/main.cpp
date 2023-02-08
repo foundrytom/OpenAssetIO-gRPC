@@ -14,11 +14,11 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 
-class ManagerProxyImpl final : public openassetio_grpc::ManagerProxy::Service {
+class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Service {
  public:
   Status Identifiers([[maybe_unused]] ServerContext* context,
-                     [[maybe_unused]] const openassetio_grpc::Empty* request,
-                     ::openassetio_grpc::IdentifiersResponse* response) override {
+                     [[maybe_unused]] const openassetio_grpc_proto::EmptyRequest* request,
+                     ::openassetio_grpc_proto::IdentifiersResponse* response) override {
     response->add_identifer("com.manager.a");
     response->add_identifer("com.manager.b");
     return Status::OK;

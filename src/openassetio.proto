@@ -2,14 +2,14 @@
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 syntax = "proto3";
 
-package openassetio_grpc;
+package openassetio_grpc_proto;
 
-message Empty {}
+message EmptyRequest {}
 
 message IdentifiersResponse {
 	repeated string identifer = 1;
 };
 
 service ManagerProxy  {
-	rpc Identifiers(Empty) returns (IdentifiersResponse);
+	rpc Identifiers(EmptyRequest) returns (IdentifiersResponse);
 };
