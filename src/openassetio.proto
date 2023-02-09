@@ -8,6 +8,8 @@ message EmptyRequest {}
 message EmptyResponse {}
 
 
+// Factory
+
 message IdentifiersResponse {
 	repeated string identifer = 1;
 };
@@ -18,18 +20,40 @@ message InstantiateRequest {
 }
 
 message InstantiateResponse {
-    string remoteHandle = 1;
+    string handle = 1;
 }
 
 
 message DestroyRequest {
-    string remoteHandle = 1;
+    string handle = 1;
 }
 
+// Manager Interface
+
+message IdentifierRequest {
+    string handle = 1;
+}
+
+message IdentifierResponse {
+    string identifier = 1;
+}
+
+message DisplayNameRequest {
+    string handle = 1;
+}
+
+message DisplayNameResponse {
+    string displayName = 1;
+}
+
+// Service
 
 service ManagerProxy  {
 	rpc Identifiers(EmptyRequest) returns (IdentifiersResponse);
     rpc Instantiate(InstantiateRequest) returns (InstantiateResponse);
     rpc Destroy(DestroyRequest) returns (EmptyResponse);
+    // ManagerInterface method
+    rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
+    rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
 };
 

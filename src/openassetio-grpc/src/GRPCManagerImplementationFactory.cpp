@@ -57,7 +57,7 @@ class GRPCManagerImplementationFactoryClient {
       throw std::runtime_error(status.error_message());
     }
 
-    return GRPCManagerInterface::RemoteHandle(response.remotehandle());
+    return GRPCManagerInterface::RemoteHandle(response.handle());
   }
 
  private:
@@ -78,7 +78,7 @@ Identifiers GRPCManagerImplementationFactory::identifiers() { return client_->id
 managerApi::ManagerInterfacePtr GRPCManagerImplementationFactory::instantiate(
     [[maybe_unused]] const Identifier& identifier) {
   GRPCManagerInterface::RemoteHandle handle = client_->instantiate(identifier);
-  logger_->debugApi("Instantiated '" + identifier + "' [" + handle + "]");
+  logger_->debugApi("gRPC: Instantiated '" + identifier + "' [" + handle + "]");
   return std::make_shared<GRPCManagerInterface>(handle, channel_);
 }
 

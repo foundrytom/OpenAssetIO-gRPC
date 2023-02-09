@@ -57,7 +57,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     std::stringstream handle;
     handle << static_cast<void const *>(managerInterface.get());
     managers_.insert({handle.str(), managerInterface});
-    response->set_remotehandle(handle.str());
+    response->set_handle(handle.str());
     logger_->debugApi("Instantiated " + identifier + " with handle " + handle.str());
     return Status::OK;
   }
@@ -66,19 +66,54 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
                  const openassetio_grpc_proto::DestroyRequest* request,
                  [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse * response) override {
 
-    const auto& iter = managers_.find(request->remotehandle());
+    const auto& iter = managers_.find(request->handle());
     if (iter == managers_.end()) {
       // TODO(tc): Error handling
-      logger_->warning("Requested to destroy non-existent handle " + request->remotehandle());
+      logger_->warning("Requested to destroy non-existent handle " + request->handle());
       return Status::OK;
     }
     managers_.erase(iter);
-    logger_->debugApi("Destoryed " + request->remotehandle());
+    logger_->debugApi("Destoryed " + request->handle());
     return Status::OK;
-}
+  }
 
+  // ManagerInterface
+
+  Status Identifier([[maybe_unused]] ServerContext* context,
+                 const openassetio_grpc_proto::IdentifierRequest* request,
+                 ::openassetio_grpc_proto::IdentifierResponse * response) override {
+
+    if(ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      response->set_identifier(manager->identifier());
+      return Status::OK;
+    }
+    logger_->error("Identifier: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
+
+  Status DisplayName([[maybe_unused]] ServerContext* context,
+                 const openassetio_grpc_proto::DisplayNameRequest* request,
+                 ::openassetio_grpc_proto::DisplayNameResponse * response) override {
+
+    if(ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      response->set_displayname(manager->displayName());
+      return Status::OK;
+    }
+    logger_->error("DisplayName: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
 
  private:
+
+  [[nodiscard]] ManagerInterfacePtr managerFromHandle(const std::string& handle) const {
+
+    const auto& iter = managers_.find(handle);
+    if(iter == managers_.end()) {
+      return nullptr;
+    }
+    return iter->second;
+  }
+
   openassetio::log::LoggerInterfacePtr logger_;
   openassetio::hostApi::ManagerImplementationFactoryInterfacePtr implementationFactory_;
   std::map<std::string, ManagerInterfacePtr> managers_;

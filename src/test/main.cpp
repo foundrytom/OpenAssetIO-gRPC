@@ -38,8 +38,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
       ManagerFactory::make(std::make_shared<TestHostInterface>(), implFactory, logger);
 
   logger->info("availableManagers()");
-  for (auto& [identifier, _] : factory->availableManagers()) {
-    logger->info(identifier);
+  for (auto& [identifier, detail] : factory->availableManagers()) {
+    logger->info(detail.displayName + " [" + detail.identifier + "]");
   }
   logger->info("Done");
 

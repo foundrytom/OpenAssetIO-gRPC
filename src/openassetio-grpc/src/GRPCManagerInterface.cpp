@@ -14,41 +14,73 @@ namespace openassetio::grpc {
 
 class GRPCManagerInterfaceClient {
  public:
-  explicit GRPCManagerInterfaceClient(std::shared_ptr<Channel> channel)
-      : stub_(openassetio_grpc_proto::ManagerProxy::NewStub(std::move(channel))) {}
+  explicit GRPCManagerInterfaceClient(std::shared_ptr<Channel> channel,
+                                      GRPCManagerInterface::RemoteHandle handle)
+      : stub_(openassetio_grpc_proto::ManagerProxy::NewStub(std::move(channel))),
+        handle_(std::move(handle)) {}
 
-  void destroy(const GRPCManagerInterface::RemoteHandle &handle) {
+  std::string identifier() {
+    openassetio_grpc_proto::IdentifierRequest request;
+    openassetio_grpc_proto::IdentifierResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+
+    Status status = stub_->Identifier(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+    return response.identifier();
+  }
+
+  std::string displayName() {
+    openassetio_grpc_proto::DisplayNameRequest request;
+    openassetio_grpc_proto::DisplayNameResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+
+    Status status = stub_->DisplayName(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+    return response.displayname();
+  }
+
+
+  void destroy() {
     openassetio_grpc_proto::DestroyRequest request;
     openassetio_grpc_proto::EmptyResponse response;
     ClientContext context;
 
-    request.set_remotehandle(handle);
+    request.set_handle(handle_);
 
-    Status status = stub_->Destroy(&context, request, &response);
+    stub_->Destroy(&context, request, &response);
   }
+
+  const std::string &handle() const { return handle_; }
 
  private:
   std::unique_ptr<openassetio_grpc_proto::ManagerProxy::Stub> stub_;
+  const GRPCManagerInterface::RemoteHandle handle_;
 };
 
 GRPCManagerInterface::GRPCManagerInterface(GRPCManagerInterface::RemoteHandle handle,
                                            const std::string &channel)
-    : handle_(std::move(handle)),
-      client_(new GRPCManagerInterfaceClient(
-          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()))) {}
+    : client_(new GRPCManagerInterfaceClient(
+          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()),
+          std::move(handle))) {}
 
 GRPCManagerInterface::~GRPCManagerInterface() {
   try {
-    client_->destroy(handle_);
+    client_->destroy();
   } catch (...) {
   }
 }
 
-Str GRPCManagerInterface::displayName() const {
-  return "OpenAssetIO gRPC Proxy [" + handle_ + "]";
-}
+Identifier GRPCManagerInterface::identifier() const { return client_->identifier(); }
 
-Identifier GRPCManagerInterface::identifier() const { return "org.openassetio.manager.gRPC"; }
+Str GRPCManagerInterface::displayName() const { return client_->displayName(); }
 
 trait::TraitsDatas GRPCManagerInterface::managementPolicy(
     [[maybe_unused]] const trait::TraitSets &traitSets,
