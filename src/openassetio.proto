@@ -30,6 +30,11 @@ message DestroyRequest {
 
 // Types
 
+message ErrorMsg {
+    int32 code = 1;
+    string errorMessage = 2;
+}
+
 message InfoDictMsg {
     map<string, bool> bools = 1;
     map<string, int64> ints = 2;
@@ -114,6 +119,26 @@ message ManagementPolicyRequest {
     bool is = 1;
  }
 
+ message ResolveRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    ContextMsg context = 3;
+    TraitSetMsg traitSet = 4;
+    repeated string entityReference = 5;
+ }
+
+ message ResolveResponse {
+    message ResultOrErrorMsg {
+        uint64 index = 1;
+        oneof result_oneof {
+            TraitsDataMsg result = 2;
+            ErrorMsg error = 3;
+        }
+    }
+    repeated ResultOrErrorMsg resultOrError = 1;
+ }
+
+
 // Service
 
 service ManagerProxy  {
@@ -126,5 +151,6 @@ service ManagerProxy  {
     rpc Initialize(InitializeRequest) returns (EmptyResponse);
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
     rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);
+    rpc Resolve(ResolveRequest) returns (ResolveResponse);
 };
 

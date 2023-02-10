@@ -3,6 +3,7 @@
 #include "openassetio-grpc/GRPCManagerInterface.hpp"
 
 #include <grpcpp/grpcpp.h>
+#include <openassetio/BatchElementError.hpp>
 #include <openassetio/managerApi/ManagerInterface.hpp>
 #include <openassetio/trait/collection.hpp>
 
@@ -125,6 +126,40 @@ class GRPCManagerInterfaceClient {
     stub_->Destroy(&context, request, &response);
   }
 
+  void resolve(const EntityReferences &entityReferences, const trait::TraitSet &traitSet,
+               const ContextConstPtr &context, const managerApi::HostSessionPtr &hostSession,
+               const GRPCManagerInterface::ResolveSuccessCallback &successCallback,
+               const BatchElementErrorCallback &errorCallback) {
+    openassetio_grpc_proto::ResolveRequest request;
+    openassetio_grpc_proto::ResolveResponse response;
+    ClientContext clientContext;
+
+    request.set_handle(handle_);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+    contextToMsg(context, request.mutable_context());
+    traitSetToMsg(traitSet, request.mutable_traitset());
+
+    for (const EntityReference &ref : entityReferences) {
+      *(request.add_entityreference()) = ref.toString();
+    }
+
+    Status status = stub_->Resolve(&clientContext, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    for (const auto &resultOrError : response.resultorerror()) {
+      if (resultOrError.has_result()) {
+        successCallback(resultOrError.index(), msgToTraitsData(resultOrError.result()));
+      } else {
+        const auto &error = resultOrError.error();
+        errorCallback(
+            resultOrError.index(),
+            BatchElementError{BatchElementError::ErrorCode(error.code()), error.errormessage()});
+      }
+    }
+  }
+
   const std::string &handle() const { return handle_; }
 
  private:
@@ -174,7 +209,10 @@ void GRPCManagerInterface::resolve(
     [[maybe_unused]] const ContextConstPtr &context,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const ResolveSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {}
+    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  client_->resolve(entityReferences, traitSet, context, hostSession, successCallback,
+                   errorCallback);
+}
 
 void GRPCManagerInterface::preflight(
     [[maybe_unused]] const EntityReferences &entityReferences,

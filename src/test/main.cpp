@@ -11,6 +11,7 @@
 #include <openassetio/hostApi/ManagerFactory.hpp>
 #include <openassetio/log/ConsoleLogger.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
+#include <openassetio/trait/property.hpp>
 
 #include <openassetio-grpc/GRPCManagerImplementationFactory.hpp>
 
@@ -84,13 +85,32 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     }
   }
 
-  if(argc == 1) {
+  if (argc == 1) {
     logger->debug("Nothing to resolve");
     return 0;
   }
 
   EntityReference ref = defaultManager->createEntityReference(argv[1]);
   logger->info("Resolving " + ref.toString());
+
+  context->access = Context::Access::kRead;
+  defaultManager->resolve(
+      {ref}, {kTraitId}, context,
+      [&logger](std::size_t, const openassetio::TraitsDataPtr& data) {
+        if (data->hasTrait(kTraitId)) {
+          openassetio::trait::property::Value val;
+          if (data->getTraitProperty(&val, kTraitId, "location")) {
+            logger->info(kTraitId + ": " + std::get<openassetio::Str>(val));
+          } else {
+            logger->info(kTraitId + ": No location data");
+          }
+        } else {
+          logger->info(kTraitId + ": Trait not imbued");
+        }
+      },
+      [&logger](std::size_t, const openassetio::BatchElementError& error) {
+        logger->error(error.message);
+      });
 
   return 0;
 }

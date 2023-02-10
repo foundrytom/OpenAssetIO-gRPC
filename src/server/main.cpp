@@ -2,6 +2,7 @@
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
 #include <map>
+#include <openassetio/BatchElementError.hpp>
 #include <openassetio/trait/collection.hpp>
 #include <sstream>
 
@@ -14,6 +15,7 @@
 #include <grpcpp/server_context.h>
 
 #include <openassetio/Context.hpp>
+#include <openassetio/EntityReference.hpp>
 #include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
 #include <openassetio/log/ConsoleLogger.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
@@ -30,6 +32,7 @@ using grpc::ServerContext;
 using grpc::Status;
 
 using openassetio::ContextPtr;
+using openassetio::EntityReference;
 using openassetio::log::ConsoleLogger;
 using openassetio::log::SeverityFilter;
 using openassetio::managerApi::HostSessionPtr;
@@ -112,15 +115,15 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
                     [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse* response) override {
     if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
       try {
-      HostSessionPtr hostSession =
-          openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
-      openassetio::InfoDictionary managerSettings =
-          openassetio::grpc::msgToInfoDictionary(request->settings());
+        HostSessionPtr hostSession =
+            openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
+        openassetio::InfoDictionary managerSettings =
+            openassetio::grpc::msgToInfoDictionary(request->settings());
 
-      logger_->debugApi(request->handle() + " initialize()");
-      manager->initialize(managerSettings, hostSession);
+        logger_->debugApi(request->handle() + " initialize()");
+        manager->initialize(managerSettings, hostSession);
 
-      return Status::OK;
+        return Status::OK;
       } catch (std::exception& e) {
         const std::string msg{e.what()};
         return Status{grpc::StatusCode::ABORTED, msg};
@@ -162,9 +165,10 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::CANCELLED;
   }
 
-  Status IsEntityReferenceString([[maybe_unused]] ServerContext* context,
-                          const openassetio_grpc_proto::IsEntityReferenceStringRequest* request,
-                          openassetio_grpc_proto::IsEntityReferenceStringResponse* response) override {
+  Status IsEntityReferenceString(
+      [[maybe_unused]] ServerContext* context,
+      const openassetio_grpc_proto::IsEntityReferenceStringRequest* request,
+      openassetio_grpc_proto::IsEntityReferenceStringResponse* response) override {
     if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
       try {
         HostSessionPtr hostSession =
@@ -183,6 +187,46 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::CANCELLED;
   }
 
+  Status Resolve([[maybe_unused]] ServerContext* serverContext,
+                 const openassetio_grpc_proto::ResolveRequest* request,
+                 openassetio_grpc_proto::ResolveResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      try {
+        HostSessionPtr hostSession =
+            openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
+        ContextPtr context = openassetio::grpc::msgToContext(request->context());
+
+        openassetio::EntityReferences refs;
+        for (const auto& refStr : request->entityreference()) {
+          // TODO(tc) isEntityReferenceString?
+          refs.push_back(EntityReference{refStr});
+        }
+
+        logger_->debugApi(request->handle() + " resolve()");
+        manager->resolve(
+            refs, openassetio::grpc::msgToTraitSet(request->traitset()), context, hostSession,
+            [&response](std::size_t index, const openassetio::TraitsDataPtr& data) {
+              auto* elementMsg = response->add_resultorerror();
+              elementMsg->set_index(index);
+              openassetio::grpc::traitsDataToMsg(data, elementMsg->mutable_result());
+            },
+            [&response](std::size_t index, const openassetio::BatchElementError& error) {
+              auto* elementMsg = response->add_resultorerror();
+              elementMsg->set_index(index);
+              auto* errorMsg = elementMsg->mutable_error();
+              errorMsg->set_code(int32_t(error.code));
+              errorMsg->set_errormessage(error.message);
+            });
+
+        return Status::OK;
+      } catch (std::exception& e) {
+        const std::string msg{e.what()};
+        return Status{grpc::StatusCode::ABORTED, msg};
+      }
+    }
+    logger_->error("Initialize: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
 
  private:
   [[nodiscard]] ManagerInterfacePtr managerFromHandle(const std::string& handle) const {
