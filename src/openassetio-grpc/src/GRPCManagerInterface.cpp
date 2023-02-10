@@ -58,7 +58,7 @@ class GRPCManagerInterfaceClient {
     ClientContext context;
 
     request.set_handle(handle_);
-    hostSessionToMsg(hostSession, request.mutable_hostsession())  ;
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
     infoDictionaryToMsg(managerSettings, request.mutable_settings());
 
     Status status = stub_->Initialize(&context, request, &response);
@@ -67,11 +67,9 @@ class GRPCManagerInterfaceClient {
     }
   }
 
-  trait::TraitsDatas managementPolicy(
-      const trait::TraitSets &traitSets,
-      const ContextConstPtr &context,
-      const managerApi::HostSessionPtr &hostSession) const {
-
+  trait::TraitsDatas managementPolicy(const trait::TraitSets &traitSets,
+                                      const ContextConstPtr &context,
+                                      const managerApi::HostSessionPtr &hostSession) const {
     openassetio_grpc_proto::ManagementPolicyRequest request;
     openassetio_grpc_proto::ManagementPolicyResponse response;
     ClientContext clientContext;
@@ -80,8 +78,8 @@ class GRPCManagerInterfaceClient {
     contextToMsg(context, request.mutable_context());
     hostSessionToMsg(hostSession, request.mutable_hostsession());
 
-    for(const trait::TraitSet& set: traitSets) {
-      auto* msg = request.add_traitset();
+    for (const trait::TraitSet &set : traitSets) {
+      auto *msg = request.add_traitset();
       traitSetToMsg(set, msg);
     }
 
@@ -91,10 +89,28 @@ class GRPCManagerInterfaceClient {
     }
 
     trait::TraitsDatas datas;
-    for(const auto &dataMsg: response.policy()) {
+    for (const auto &dataMsg : response.policy()) {
       datas.push_back(msgToTraitsData(dataMsg));
     }
     return datas;
+  }
+
+  bool isEntityReferenceString(const Str &someString,
+                               const managerApi::HostSessionPtr &hostSession) const {
+    openassetio_grpc_proto::IsEntityReferenceStringRequest request;
+    openassetio_grpc_proto::IsEntityReferenceStringResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+    request.set_somestring(someString);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+
+    Status status = stub_->IsEntityReferenceString(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    return response.is();
   }
 
   // Management
@@ -143,7 +159,7 @@ trait::TraitsDatas GRPCManagerInterface::managementPolicy(
 bool GRPCManagerInterface::isEntityReferenceString(
     [[maybe_unused]] const Str &someString,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
-  return false;
+  return client_->isEntityReferenceString(someString, hostSession);
 }
 
 void GRPCManagerInterface::initialize(

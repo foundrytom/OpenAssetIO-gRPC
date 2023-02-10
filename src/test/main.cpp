@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
-
 #include <memory>
+
 #include <openassetio/Context.hpp>
+#include <openassetio/EntityReference.hpp>
 #include <openassetio/TraitsData.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
@@ -15,6 +16,7 @@
 
 using openassetio::Context;
 using openassetio::ContextPtr;
+using openassetio::EntityReference;
 using openassetio::hostApi::ManagerFactory;
 using openassetio::hostApi::ManagerFactoryPtr;
 using openassetio::hostApi::ManagerPtr;
@@ -81,6 +83,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
       logger->info(id);
     }
   }
+
+  if(argc == 1) {
+    logger->debug("Nothing to resolve");
+    return 0;
+  }
+
+  EntityReference ref = defaultManager->createEntityReference(argv[1]);
+  logger->info("Resolving " + ref.toString());
 
   return 0;
 }

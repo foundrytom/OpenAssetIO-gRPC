@@ -103,6 +103,17 @@ message ManagementPolicyRequest {
     repeated TraitsDataMsg policy = 1;
  }
 
+
+ message IsEntityReferenceStringRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    string someString = 3;
+ }
+
+ message IsEntityReferenceStringResponse {
+    bool is = 1;
+ }
+
 // Service
 
 service ManagerProxy  {
@@ -114,5 +125,6 @@ service ManagerProxy  {
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
     rpc Initialize(InitializeRequest) returns (EmptyResponse);
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
+    rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);
 };
 

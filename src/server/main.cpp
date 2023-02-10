@@ -162,6 +162,28 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::CANCELLED;
   }
 
+  Status IsEntityReferenceString([[maybe_unused]] ServerContext* context,
+                          const openassetio_grpc_proto::IsEntityReferenceStringRequest* request,
+                          openassetio_grpc_proto::IsEntityReferenceStringResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      try {
+        HostSessionPtr hostSession =
+            openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
+
+        logger_->debugApi(request->handle() + " isEntityReferenceString()");
+        response->set_is(manager->isEntityReferenceString(request->somestring(), hostSession));
+
+        return Status::OK;
+      } catch (std::exception& e) {
+        const std::string msg{e.what()};
+        return Status{grpc::StatusCode::ABORTED, msg};
+      }
+    }
+    logger_->error("Initialize: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
+
+
  private:
   [[nodiscard]] ManagerInterfacePtr managerFromHandle(const std::string& handle) const {
     const auto& iter = managers_.find(handle);
