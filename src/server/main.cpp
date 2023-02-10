@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
-#include <sstream>
 #include <map>
+#include <sstream>
 
 #include <Python.h>
 
@@ -30,7 +30,6 @@ using openassetio::log::SeverityFilter;
 using openassetio::managerApi::HostSessionPtr;
 using openassetio::managerApi::ManagerInterfacePtr;
 
-
 class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Service {
  public:
   explicit ManagerProxyImpl(openassetio::log::LoggerInterfacePtr logger)
@@ -54,10 +53,9 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
                      ::openassetio_grpc_proto::InstantiateResponse* response) override {
     const openassetio::Identifier& identifier = request->identifier();
     // TODO(tc) Handle exceptions here
-    const ManagerInterfacePtr managerInterface =
-        implementationFactory_->instantiate(identifier);
+    const ManagerInterfacePtr managerInterface = implementationFactory_->instantiate(identifier);
     std::stringstream handle;
-    handle << static_cast<void const *>(managerInterface.get());
+    handle << static_cast<void const*>(managerInterface.get());
     managers_.insert({handle.str(), managerInterface});
     response->set_handle(handle.str());
     logger_->debugApi("Instantiated " + identifier + " with handle " + handle.str());
@@ -66,8 +64,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
 
   Status Destroy([[maybe_unused]] ServerContext* context,
                  const openassetio_grpc_proto::DestroyRequest* request,
-                 [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse * response) override {
-
+                 [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse* response) override {
     const auto& iter = managers_.find(request->handle());
     if (iter == managers_.end()) {
       // TODO(tc): Error handling
@@ -75,17 +72,17 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
       return Status::OK;
     }
     managers_.erase(iter);
-    logger_->debugApi("Destoryed " + request->handle());
+    logger_->debugApi("Destroyed " + request->handle());
     return Status::OK;
   }
 
   // ManagerInterface
 
   Status Identifier([[maybe_unused]] ServerContext* context,
-                 const openassetio_grpc_proto::IdentifierRequest* request,
-                 ::openassetio_grpc_proto::IdentifierResponse * response) override {
-
-    if(ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+                    const openassetio_grpc_proto::IdentifierRequest* request,
+                    ::openassetio_grpc_proto::IdentifierResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      logger_->debugApi(request->handle() + " identifier()");
       response->set_identifier(manager->identifier());
       return Status::OK;
     }
@@ -94,10 +91,10 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
   }
 
   Status DisplayName([[maybe_unused]] ServerContext* context,
-                 const openassetio_grpc_proto::DisplayNameRequest* request,
-                 ::openassetio_grpc_proto::DisplayNameResponse * response) override {
-
-    if(ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+                     const openassetio_grpc_proto::DisplayNameRequest* request,
+                     ::openassetio_grpc_proto::DisplayNameResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      logger_->debugApi(request->handle() + " displayName()");
       response->set_displayname(manager->displayName());
       return Status::OK;
     }
@@ -126,7 +123,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
  private:
   [[nodiscard]] ManagerInterfacePtr managerFromHandle(const std::string& handle) const {
     const auto& iter = managers_.find(handle);
-    if(iter == managers_.end()) {
+    if (iter == managers_.end()) {
       return nullptr;
     }
     return iter->second;
