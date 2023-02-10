@@ -40,7 +40,8 @@ target_sources(
     ${LIB_TARGET_NAME}
     PRIVATE
     src/GRPCManagerImplementationFactory.cpp
-    src/GRPCManagerInterface.cpp)
+    src/GRPCManagerInterface.cpp
+    ../shared/utils.cpp)
 
 target_include_directories(
     ${LIB_TARGET_NAME}
@@ -50,7 +51,10 @@ target_include_directories(
     # Use includes from source tree for building.
     "$<BUILD_INTERFACE:${public_header_source_root}>"
     # Use includes from install tree for installed lib.
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    PRIVATE
+    "../shared"
+    )
 
 
 target_link_libraries(${LIB_TARGET_NAME}

@@ -18,6 +18,7 @@
 #include <openassetio/python/hostApi.hpp>
 
 #include "openassetio.grpc.pb.h"
+#include "utils.hpp"
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -26,6 +27,7 @@ using grpc::Status;
 
 using openassetio::log::ConsoleLogger;
 using openassetio::log::SeverityFilter;
+using openassetio::managerApi::HostSessionPtr;
 using openassetio::managerApi::ManagerInterfacePtr;
 
 
@@ -103,10 +105,26 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::CANCELLED;
   }
 
+  Status Initialize([[maybe_unused]] ServerContext* context,
+                    const openassetio_grpc_proto::InitializeRequest* request,
+                    [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      HostSessionPtr hostSesssion =
+          openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
+      openassetio::InfoDictionary managerSettings =
+          openassetio::grpc::msgToInfoDictionary(request->settings());
+
+      logger_->debugApi(request->handle() + " initialize()");
+      manager->initialize(managerSettings, hostSesssion);
+
+      return Status::OK;
+    }
+    logger_->error("Initialize: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
+
  private:
-
   [[nodiscard]] ManagerInterfacePtr managerFromHandle(const std::string& handle) const {
-
     const auto& iter = managers_.find(handle);
     if(iter == managers_.end()) {
       return nullptr;

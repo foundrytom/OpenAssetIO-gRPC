@@ -28,6 +28,25 @@ message DestroyRequest {
     string handle = 1;
 }
 
+// Types
+
+message InfoDictMsg {
+    map<string, bool> bools = 1;
+    map<string, int64> ints = 2;
+    map<string, double> floats = 3;
+    map<string, string> strings = 4;
+}
+
+message HostMsg {
+    string identifier = 1;
+    string displayName = 2;
+}
+
+message HostSessionMsg {
+    HostMsg host = 1;
+}
+
+
 // Manager Interface
 
 message IdentifierRequest {
@@ -46,14 +65,21 @@ message DisplayNameResponse {
     string displayName = 1;
 }
 
+message InitializeRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    InfoDictMsg settings = 3;
+}
+
 // Service
 
 service ManagerProxy  {
 	rpc Identifiers(EmptyRequest) returns (IdentifiersResponse);
     rpc Instantiate(InstantiateRequest) returns (InstantiateResponse);
     rpc Destroy(DestroyRequest) returns (EmptyResponse);
-    // ManagerInterface method
+    // ManagerInterface methods
     rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
+    rpc Initialize(InitializeRequest) returns (EmptyResponse);
 };
 

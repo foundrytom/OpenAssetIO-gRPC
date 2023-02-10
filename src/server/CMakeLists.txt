@@ -16,7 +16,7 @@ if (NOT ${Python_VERSION_MAJOR} EQUAL ${OpenAssetIO_Python_VERSION_MAJOR} OR
     )
 endif ()
 
-set(SRC main.cpp)
+set(SRC main.cpp ../shared/utils.cpp)
 
 add_executable(${SERVER_TARGET_NAME} ${SRC})
 
@@ -25,6 +25,12 @@ add_executable(${SERVER_TARGET_NAME} ${SRC})
 set_target_properties(${SERVER_TARGET_NAME} PROPERTIES ENABLE_EXPORTS ON)
 
 openassetio_grpc_set_default_target_properties(${SERVER_TARGET_NAME})
+
+target_include_directories(
+    ${SERVER_TARGET_NAME}
+    PRIVATE
+    "../shared"
+    )
 
 target_link_libraries(${SERVER_TARGET_NAME}
     OpenAssetIO::openassetio-core

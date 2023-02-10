@@ -5,6 +5,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "openassetio.grpc.pb.h"
+#include "openassetio.pb.h"
+#include "utils.hpp"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -47,6 +49,23 @@ class GRPCManagerInterfaceClient {
     return response.displayname();
   }
 
+  void initialize(const InfoDictionary &managerSettings,
+                  const managerApi::HostSessionPtr &hostSession) {
+    openassetio_grpc_proto::InitializeRequest request;
+    openassetio_grpc_proto::EmptyResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+    infoDictionaryToMsg(managerSettings, request.mutable_settings());
+
+    Status status = stub_->Initialize(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+  }
+
+  // Management
 
   void destroy() {
     openassetio_grpc_proto::DestroyRequest request;
