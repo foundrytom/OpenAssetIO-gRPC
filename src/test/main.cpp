@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <openassetio/hostApi/HostInterface.hpp>
+#include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
 #include <openassetio/log/ConsoleLogger.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
@@ -12,6 +13,7 @@
 
 using openassetio::hostApi::ManagerFactory;
 using openassetio::hostApi::ManagerFactoryPtr;
+using openassetio::hostApi::ManagerPtr;
 using openassetio::log::ConsoleLogger;
 using openassetio::log::SeverityFilter;
 
@@ -28,20 +30,32 @@ class TestHostInterface : public openassetio::hostApi::HostInterface {
 using openassetio::grpc::GRPCManagerImplementationFactory;
 using openassetio::grpc::GRPCManagerImplementationFactoryPtr;
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
   openassetio::log::LoggerInterfacePtr logger = SeverityFilter::make(ConsoleLogger::make());
 
   GRPCManagerImplementationFactoryPtr implFactory =
       std::make_shared<GRPCManagerImplementationFactory>("0.0.0.0:50051", logger);
 
-  ManagerFactoryPtr factory =
-      ManagerFactory::make(std::make_shared<TestHostInterface>(), implFactory, logger);
+  openassetio::hostApi::HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
 
-  logger->info("availableManagers()");
-  for (auto& [identifier, detail] : factory->availableManagers()) {
+  ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
+  logger->info("Available managers:");
+  for (auto &[identifier, detail] : factory->availableManagers()) {
     logger->info(detail.displayName + " [" + detail.identifier + "]");
   }
   logger->info("Done");
+
+  // Initialize the default manager
+  logger->info("Default manager:");
+  ManagerPtr defaultManager =
+      factory->defaultManagerForInterface(hostInterface, implFactory, logger);
+
+  if (!defaultManager) {
+    logger->info("No default manager configured");
+    return 1;
+  }
+
+  logger->info(defaultManager->displayName());
 
   return 0;
 }
