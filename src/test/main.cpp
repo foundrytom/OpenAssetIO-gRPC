@@ -3,6 +3,8 @@
 #include <iostream>
 
 #include <memory>
+#include <openassetio/Context.hpp>
+#include <openassetio/TraitsData.hpp>
 #include <openassetio/hostApi/HostInterface.hpp>
 #include <openassetio/hostApi/Manager.hpp>
 #include <openassetio/hostApi/ManagerFactory.hpp>
@@ -11,6 +13,8 @@
 
 #include <openassetio-grpc/GRPCManagerImplementationFactory.hpp>
 
+using openassetio::Context;
+using openassetio::ContextPtr;
 using openassetio::hostApi::ManagerFactory;
 using openassetio::hostApi::ManagerFactoryPtr;
 using openassetio::hostApi::ManagerPtr;
@@ -30,7 +34,7 @@ class TestHostInterface : public openassetio::hostApi::HostInterface {
 using openassetio::grpc::GRPCManagerImplementationFactory;
 using openassetio::grpc::GRPCManagerImplementationFactoryPtr;
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
   openassetio::log::LoggerInterfacePtr logger = SeverityFilter::make(ConsoleLogger::make());
 
   GRPCManagerImplementationFactoryPtr implFactory =
@@ -40,7 +44,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
 
   ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
   logger->info("Available managers:");
-  for (auto &[identifier, detail] : factory->availableManagers()) {
+  for (auto& [identifier, detail] : factory->availableManagers()) {
     logger->info(detail.displayName + " [" + detail.identifier + "]");
   }
   logger->info("Done");
@@ -56,6 +60,27 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
   }
 
   logger->info(defaultManager->displayName());
+
+  static const std::string kTraitId = "openassetio-mediacreation:content.LocatableContent";
+
+  ContextPtr context = Context::make();
+
+  {
+    logger->info("Management Policy for " + kTraitId + " [read]:");
+    context->access = Context::Access::kRead;
+    const auto policies = defaultManager->managementPolicy({{kTraitId}}, context);
+    for (const openassetio::trait::TraitId& id : policies[0]->traitSet()) {
+      logger->info(id);
+    }
+  }
+  {
+    logger->info("Management Policy for " + kTraitId + " [write]:");
+    context->access = Context::Access::kWrite;
+    const auto policies = defaultManager->managementPolicy({{kTraitId}}, context);
+    for (const openassetio::trait::TraitId& id : policies[0]->traitSet()) {
+      logger->info(id);
+    }
+  }
 
   return 0;
 }

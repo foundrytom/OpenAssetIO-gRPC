@@ -2,15 +2,18 @@
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 #include <iostream>
 #include <map>
+#include <openassetio/trait/collection.hpp>
 #include <sstream>
 
 #include <Python.h>
 
+#include <grpc/status.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
+#include <openassetio/Context.hpp>
 #include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
 #include <openassetio/log/ConsoleLogger.hpp>
 #include <openassetio/log/SeverityFilter.hpp>
@@ -18,6 +21,7 @@
 #include <openassetio/python/hostApi.hpp>
 
 #include "openassetio.grpc.pb.h"
+#include "openassetio.pb.h"
 #include "utils.hpp"
 
 using grpc::Server;
@@ -25,6 +29,7 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 
+using openassetio::ContextPtr;
 using openassetio::log::ConsoleLogger;
 using openassetio::log::SeverityFilter;
 using openassetio::managerApi::HostSessionPtr;
@@ -106,15 +111,52 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
                     const openassetio_grpc_proto::InitializeRequest* request,
                     [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse* response) override {
     if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
-      HostSessionPtr hostSesssion =
+      try {
+      HostSessionPtr hostSession =
           openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
       openassetio::InfoDictionary managerSettings =
           openassetio::grpc::msgToInfoDictionary(request->settings());
 
       logger_->debugApi(request->handle() + " initialize()");
-      manager->initialize(managerSettings, hostSesssion);
+      manager->initialize(managerSettings, hostSession);
 
       return Status::OK;
+      } catch (std::exception& e) {
+        const std::string msg{e.what()};
+        return Status{grpc::StatusCode::ABORTED, msg};
+      }
+    }
+    logger_->error("Initialize: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
+
+  Status ManagementPolicy([[maybe_unused]] ServerContext* serverContext,
+                          const openassetio_grpc_proto::ManagementPolicyRequest* request,
+                          openassetio_grpc_proto::ManagementPolicyResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      try {
+        HostSessionPtr hostSession =
+            openassetio::grpc::msgToHostSession(request->hostsession(), logger_);
+        ContextPtr context = openassetio::grpc::msgToContext(request->context());
+
+        openassetio::trait::TraitSets sets;
+        for (const auto& setMsg : request->traitset()) {
+          sets.push_back(openassetio::grpc::msgToTraitSet(setMsg));
+        }
+
+        logger_->debugApi(request->handle() + " managementPolicy()");
+        auto policies = manager->managementPolicy(sets, context, hostSession);
+
+        for (const auto& traitsData : policies) {
+          auto* policyMsg = response->add_policy();
+          openassetio::grpc::traitsDataToMsg(traitsData, policyMsg);
+        }
+
+        return Status::OK;
+      } catch (std::exception& e) {
+        const std::string msg{e.what()};
+        return Status{grpc::StatusCode::ABORTED, msg};
+      }
     }
     logger_->error("Initialize: Unknown handle " + request->handle());
     return Status::CANCELLED;

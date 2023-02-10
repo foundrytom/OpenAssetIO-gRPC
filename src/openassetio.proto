@@ -46,6 +46,26 @@ message HostSessionMsg {
     HostMsg host = 1;
 }
 
+message ContextMsg {
+    int32 access = 1;
+    int32 retention = 2;
+    TraitsDataMsg locale = 3;
+}
+
+message TraitSetMsg {
+    repeated string traitId = 1;
+}
+
+message TraitsDataMsg {
+    message TraitMsg {
+        string id = 1;
+        map<string, bool> bools = 2;
+        map<string, int64> ints = 3;
+        map<string, double> floats = 4;
+        map<string, string> strings = 5;
+    }
+    repeated TraitMsg trait = 1;
+}
 
 // Manager Interface
 
@@ -71,6 +91,18 @@ message InitializeRequest {
     InfoDictMsg settings = 3;
 }
 
+
+message ManagementPolicyRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    ContextMsg context = 3;
+    repeated TraitSetMsg traitSet = 4;
+}
+
+ message ManagementPolicyResponse {
+    repeated TraitsDataMsg policy = 1;
+ }
+
 // Service
 
 service ManagerProxy  {
@@ -81,5 +113,6 @@ service ManagerProxy  {
     rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
     rpc Initialize(InitializeRequest) returns (EmptyResponse);
+    rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
 };
 

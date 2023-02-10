@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/OpenAssetIO/OpenAssetIO-TraitGen/main/python/openassetio_traitgen/schema.json
+# yamllint disable-line rule:document-start
+package: openassetio-grpc
+
+description: Traits relating to the gRPC inter-process bridge.
+
+traits:
+  locale:
+    description: Locale traits
+    members:
+      GRPCProxy:
+        description: >
+            This trait is automatically imbued in the Context's locale
+            when a call has been relayed via the gRPC bridge.
+        usage:
+          - locale

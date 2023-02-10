@@ -1,0 +1,28 @@
+{
+    "$schema": "https://raw.githubusercontent.com/OpenAssetIO/OpenAssetIO-Manager-BAL/main/schema.json",
+    "managementPolicy": {
+        "read": {
+            "default": {
+                "openassetio-mediacreation:managementPolicy.Managed": {
+                    "exclusive": false
+                }
+            }
+        },
+        "write": {
+            "default": {}
+        }
+    },
+    "entities": {
+        "anAsset": {
+            "versions": [
+                {
+                    "traits": {
+                        "openassetio-mediacreation:content.LocatableContent": {
+                            "location": "file:///dev/null"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

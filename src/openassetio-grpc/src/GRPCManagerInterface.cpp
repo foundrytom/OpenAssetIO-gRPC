@@ -3,6 +3,8 @@
 #include "openassetio-grpc/GRPCManagerInterface.hpp"
 
 #include <grpcpp/grpcpp.h>
+#include <openassetio/managerApi/ManagerInterface.hpp>
+#include <openassetio/trait/collection.hpp>
 
 #include "openassetio.grpc.pb.h"
 #include "openassetio.pb.h"
@@ -56,13 +58,43 @@ class GRPCManagerInterfaceClient {
     ClientContext context;
 
     request.set_handle(handle_);
-    hostSessionToMsg(hostSession, request.mutable_hostsession());
+    hostSessionToMsg(hostSession, request.mutable_hostsession())  ;
     infoDictionaryToMsg(managerSettings, request.mutable_settings());
 
     Status status = stub_->Initialize(&context, request, &response);
     if (!status.ok()) {
       throw std::runtime_error(status.error_message());
     }
+  }
+
+  trait::TraitsDatas managementPolicy(
+      const trait::TraitSets &traitSets,
+      const ContextConstPtr &context,
+      const managerApi::HostSessionPtr &hostSession) const {
+
+    openassetio_grpc_proto::ManagementPolicyRequest request;
+    openassetio_grpc_proto::ManagementPolicyResponse response;
+    ClientContext clientContext;
+
+    request.set_handle(handle_);
+    contextToMsg(context, request.mutable_context());
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+
+    for(const trait::TraitSet& set: traitSets) {
+      auto* msg = request.add_traitset();
+      traitSetToMsg(set, msg);
+    }
+
+    Status status = stub_->ManagementPolicy(&clientContext, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    trait::TraitsDatas datas;
+    for(const auto &dataMsg: response.policy()) {
+      datas.push_back(msgToTraitsData(dataMsg));
+    }
+    return datas;
   }
 
   // Management
@@ -105,7 +137,7 @@ trait::TraitsDatas GRPCManagerInterface::managementPolicy(
     [[maybe_unused]] const trait::TraitSets &traitSets,
     [[maybe_unused]] const ContextConstPtr &context,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
-  return trait::TraitsDatas{};
+  return client_->managementPolicy(traitSets, context, hostSession);
 }
 
 bool GRPCManagerInterface::isEntityReferenceString(
@@ -116,7 +148,9 @@ bool GRPCManagerInterface::isEntityReferenceString(
 
 void GRPCManagerInterface::initialize(
     [[maybe_unused]] InfoDictionary managerSettings,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) {}
+    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) {
+  client_->initialize(managerSettings, hostSession);
+}
 
 void GRPCManagerInterface::resolve(
     [[maybe_unused]] const EntityReferences &entityReferences,
