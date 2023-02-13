@@ -15,7 +15,21 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
+/**
+ * The gRPC code is split out into its own class to help contain it as
+ * an implementation detail.
+ */
+
 namespace openassetio::grpc {
+
+/**
+ * gRPC client
+ *
+ * The client simply bridges the OpenAssetIO method signatures into gPRC
+ * messages, makes the request, and unpacks the result.
+ *
+ * Warning: Noddy/noob gRPC programming ahead!
+ */
 
 class GRPCManagerInterfaceClient {
  public:
@@ -167,6 +181,19 @@ class GRPCManagerInterfaceClient {
   const GRPCManagerInterface::RemoteHandle handle_;
 };
 
+/**
+ * ManagerInterface implementation
+ *
+ * This is just a thin wrapper around the client.
+ *
+ * @todo Proper error handling, right now gRPC failures (including
+ * server-side exceptions) are simply re-thrown as runtime_errors.
+ *
+ * @todo Remaining (incl optional) interface methods. We could also
+ * use the handle based mechanism to manage the managerInterfaceState
+ * objects.
+ */
+
 GRPCManagerInterface::GRPCManagerInterface(GRPCManagerInterface::RemoteHandle handle,
                                            const std::string &channel)
     : client_(new GRPCManagerInterfaceClient(
@@ -229,4 +256,5 @@ void GRPCManagerInterface::register_(
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const RegisterSuccessCallback &successCallback,
     [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {}
+
 };  // namespace openassetio::grpc

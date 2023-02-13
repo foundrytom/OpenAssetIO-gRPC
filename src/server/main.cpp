@@ -8,6 +8,7 @@
 
 #include <Python.h>
 
+#include <ceval.h>
 #include <grpc/status.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server.h>
@@ -38,6 +39,33 @@ using openassetio::log::SeverityFilter;
 using openassetio::managerApi::HostSessionPtr;
 using openassetio::managerApi::ManagerInterfacePtr;
 
+/**
+ * The server is a very simplistic, hacky gRPC unary gRPC server based
+ * off the quickstart guides.
+ *
+ * It ignores the normal Manager/ManagerFactory layer of OpenAssetIO and
+ * works directly at the lower level by providing external access to a
+ * ManagerImplementationFactoryInterface, and then the corresponding
+ * methods of any instantiated ManagerInterfaces.
+ *
+ * This greatly simplifies proxying methods to a Host, as its tasks are
+ * then two fold:
+ *
+ *  - Instantiate ManagerInterfaces on demand, assign them a handle, and
+ *    keep them alive until otherwise requested.
+ *
+ *  - Convert incoming gRPC messages to their equivalent OpenAssetIO
+ *    data types, invoke the methods on their corresponding
+ *    ManagerInterface instance, convert the result to gPRC messages for
+ *    the response.
+ *
+ * At present, instantiated managers are kept in a map, using their memory
+ * address as a unique key and as the handle used in gRPC messages.
+ *
+ * @todo This needs a lot of tidying and work on error handling for
+ * anything other than the happy path.
+ */
+
 class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Service {
  public:
   explicit ManagerProxyImpl(openassetio::log::LoggerInterfacePtr logger)
@@ -46,6 +74,8 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
         openassetio::python::hostApi::createPythonPluginSystemManagerImplementationFactory(
             logger_);
   }
+
+  // Factory methods
 
   Status Identifiers([[maybe_unused]] ServerContext* context,
                      [[maybe_unused]] const openassetio_grpc_proto::EmptyRequest* request,
@@ -84,7 +114,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::OK;
   }
 
-  // ManagerInterface
+  // ManagerInterface methods
 
   Status Identifier([[maybe_unused]] ServerContext* context,
                     const openassetio_grpc_proto::IdentifierRequest* request,
@@ -198,7 +228,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
 
         openassetio::EntityReferences refs;
         for (const auto& refStr : request->entityreference()) {
-          // TODO(tc) isEntityReferenceString?
+          // TODO(tc) check first with isEntityReferenceString?
           refs.push_back(EntityReference{refStr});
         }
 
@@ -239,23 +269,35 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
 
   openassetio::log::LoggerInterfacePtr logger_;
   openassetio::hostApi::ManagerImplementationFactoryInterfacePtr implementationFactory_;
+  // A simple map of handles to instances that keeps manager
+  // implementations alive while needed.
   std::map<std::string, ManagerInterfacePtr> managers_;
 };
 
 void runServer() {
   Py_Initialize();
+  // Scope ensures that all OpenAssetIO Py objects are deleted before
+  // Py_FinalizeEx.
   {
-    Py_BEGIN_ALLOW_THREADS auto logger = SeverityFilter::make(ConsoleLogger::make());
+    // We need to release the GIL so that the gRPC worker threads can
+    // call into Python as needed.
+    Py_BEGIN_ALLOW_THREADS
+
+      // @todo Allow this to be configured
     std::string serverAddress("0.0.0.0:50051");
+
+    auto logger = SeverityFilter::make(ConsoleLogger::make());
+
     ManagerProxyImpl service{logger};
 
+    // @todo Error handling
     ServerBuilder builder;
     builder.AddListeningPort(serverAddress, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
     std::unique_ptr<Server> server(builder.BuildAndStart());
-
     logger->info("Server listening on " + serverAddress);
     server->Wait();
+
     Py_END_ALLOW_THREADS
   }
   Py_FinalizeEx();

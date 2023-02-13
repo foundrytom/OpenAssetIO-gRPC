@@ -19,7 +19,19 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
+/**
+ * The gRPC code is split out into its own class to help contain it as
+ * an implementation detail.
+ */
+
 namespace openassetio::grpc {
+
+/**
+ * gRPC client implementation
+ *
+ * The client simply bridges the OpenAssetIO method signatures into gPRC
+ * messages, makes the request, and unpacks the result.
+ */
 
 class GRPCManagerImplementationFactoryClient {
  public:
@@ -63,6 +75,15 @@ class GRPCManagerImplementationFactoryClient {
  private:
   std::unique_ptr<openassetio_grpc_proto::ManagerProxy::Stub> stub_;
 };
+
+/**
+ * ManagerImplementationFactoryInterface implementation
+ *
+ * This is a thin wrapper around the client.
+ *
+ * @todo Proper error handling, right now gRPC failures (including
+ * server-side exceptions) are simply re-thrown as runtime_errors.
+ */
 
 GRPCManagerImplementationFactoryPtr GRPCManagerImplementationFactory::make(
     const std::string& channel, log::LoggerInterfacePtr logger) {

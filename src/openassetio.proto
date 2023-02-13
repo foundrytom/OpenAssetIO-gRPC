@@ -2,33 +2,22 @@
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
 syntax = "proto3";
 
+/**
+ * This proto defines an rpc service that implements the OpenAssetIO
+ * ManagerInterface contract.
+ *
+ * A single server can instantiate multiple manager implementations, and
+ * so provides additional methods to manage their lifetime, based on
+ * that of the ManagerImplementationFactoryInterface.
+ */
 package openassetio_grpc_proto;
+
+/*
+ * Common messages for OpenAssetIO data objects.
+ */
 
 message EmptyRequest {}
 message EmptyResponse {}
-
-
-// Factory
-
-message IdentifiersResponse {
-	repeated string identifer = 1;
-};
-
-
-message InstantiateRequest {
-    string identifier = 1;
-}
-
-message InstantiateResponse {
-    string handle = 1;
-}
-
-
-message DestroyRequest {
-    string handle = 1;
-}
-
-// Types
 
 message ErrorMsg {
     int32 code = 1;
@@ -72,7 +61,33 @@ message TraitsDataMsg {
     repeated TraitMsg trait = 1;
 }
 
-// Manager Interface
+/*
+ * Messages for ManagerImplementationFactory methods
+ */
+
+message IdentifiersResponse {
+	repeated string identifer = 1;
+};
+
+
+message InstantiateRequest {
+    string identifier = 1;
+}
+
+message InstantiateResponse {
+    string handle = 1;
+}
+
+
+message DestroyRequest {
+    string handle = 1;
+}
+
+
+/*
+ * Messages for ManagerInterface methods
+ */
+
 
 message IdentifierRequest {
     string handle = 1;
@@ -82,6 +97,7 @@ message IdentifierResponse {
     string identifier = 1;
 }
 
+
 message DisplayNameRequest {
     string handle = 1;
 }
@@ -89,6 +105,7 @@ message DisplayNameRequest {
 message DisplayNameResponse {
     string displayName = 1;
 }
+
 
 message InitializeRequest {
     string handle = 1;
@@ -119,6 +136,7 @@ message ManagementPolicyRequest {
     bool is = 1;
  }
 
+
  message ResolveRequest {
     string handle = 1;
     HostSessionMsg hostSession = 2;
@@ -139,12 +157,20 @@ message ManagementPolicyRequest {
  }
 
 
-// Service
-
+/*
+ * Service definition
+ *
+ * The same service covers both factory and interface methods.
+ *
+ * The service assigns a unique handle to each manager implementation
+ * that it instantiates. This is returned in the InstantiateResponse,
+ * and must be supplied as the handle parameter in all ManagerInterface
+ * method requests so that they are routed to the correct instance.
+ */
 service ManagerProxy  {
+    // MawnagerImplementationFactoryInterface methods
 	rpc Identifiers(EmptyRequest) returns (IdentifiersResponse);
     rpc Instantiate(InstantiateRequest) returns (InstantiateResponse);
-    rpc Destroy(DestroyRequest) returns (EmptyResponse);
     // ManagerInterface methods
     rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
@@ -152,5 +178,7 @@ service ManagerProxy  {
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
     rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);
     rpc Resolve(ResolveRequest) returns (ResolveResponse);
+    // Lifetime management
+    rpc Destroy(DestroyRequest) returns (EmptyResponse);
 };
 

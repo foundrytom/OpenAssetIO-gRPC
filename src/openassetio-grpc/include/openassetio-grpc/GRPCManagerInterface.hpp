@@ -12,13 +12,38 @@ OPENASSETIO_FWD_DECLARE(Context)
 
 namespace openassetio::grpc {
 
-// Forward declare client class
 class GRPCManagerInterfaceClient;
 
+/**
+ * An implementation of the OpenAssetIO MangerInterface that forwards
+ * all methods to an out-of-process gRPC service.
+ *
+ * @note This class isn't currently intended for direct use. See the
+ * GRPCManagerImplementationFactory instead.
+ */
 class OPENASSETIO_GRPC_EXPORT GRPCManagerInterface : public managerApi::ManagerInterface {
  public:
+
   using RemoteHandle = openassetio::Str;
 
+  /**
+   * @param handle The server-provided handle for the specific remote
+   * interface instance to be wrapped. This string is supplied in the
+   * InstantiateResponse message.
+   *
+   * @param channel The address/port of the service that holds the
+   * instance referred to by handle.
+   *
+   * @todo Make these optional, so they can be supplied via manager
+   * settings in `initialize`. This would allow this to then be
+   * user-configured rather than relying on the gRPC specific factory.
+   *
+   * @todo HostInterface bridging is naive, in that we always re-send
+   * the displayName/identifier with each request. This is a downside to
+   * working at the ManagerInterface level - as we don't inherently know
+   * if the host session is the same as last time. There are bunch of
+   * ways we could address this, including creating a two-way bridge.
+   */
   explicit GRPCManagerInterface(RemoteHandle handle, const std::string& channel);
   ~GRPCManagerInterface() override;
 
