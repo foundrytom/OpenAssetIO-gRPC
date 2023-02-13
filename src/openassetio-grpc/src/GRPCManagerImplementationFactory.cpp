@@ -64,6 +64,12 @@ class GRPCManagerImplementationFactoryClient {
   std::unique_ptr<openassetio_grpc_proto::ManagerProxy::Stub> stub_;
 };
 
+GRPCManagerImplementationFactoryPtr GRPCManagerImplementationFactory::make(
+    const std::string& channel, log::LoggerInterfacePtr logger) {
+  return std::shared_ptr<GRPCManagerImplementationFactory>(
+      new GRPCManagerImplementationFactory(channel, std::move(logger)));
+}
+
 GRPCManagerImplementationFactory::GRPCManagerImplementationFactory(const std::string& channel,
                                                                    log::LoggerInterfacePtr logger)
     : ManagerImplementationFactoryInterface(std::move(logger)),

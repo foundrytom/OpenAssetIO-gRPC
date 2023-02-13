@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 
-#include <openassetio/typedefs.hpp>
 #include <openassetio/hostApi/ManagerImplementationFactoryInterface.hpp>
+#include <openassetio/typedefs.hpp>
 
 #include "openassetio-grpc/export.h"
 
@@ -18,9 +18,8 @@ class GRPCManagerImplementationFactoryClient;
 
 OPENASSETIO_DECLARE_PTR(GRPCManagerImplementationFactory)
 
-/*
+/**
  * Relay OpenAssetIO API requests our-of-process using gRPC/Protobuf.
- *
  *
  * The GRPCManagerImplementationFactory provides an alternate
  * implementation factory for the OpenAssetIO ManagerFactory.
@@ -30,14 +29,24 @@ OPENASSETIO_DECLARE_PTR(GRPCManagerImplementationFactory)
  * Host.
  *
  * Managers instantiated using this factory are gRPC wrappers to an
- * instance constructed within the remote server.
+ * instance constructed within the remote server. Only the data
+ * expressed through the OpenAssetIO interface contracts is exchanged,
+ * providing runtime isolation between the specifics of the manager or
+ * hosts respective implementations.
  */
-
 class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
     : public hostApi::ManagerImplementationFactoryInterface {
  public:
-  explicit GRPCManagerImplementationFactory(const std::string& channel,
-                                            log::LoggerInterfacePtr logger);
+  /**
+   * Constructs a new instance of the factory.
+   *
+   * @param channel The address/port of a server implementing the
+   * openasseto-grpc service.
+   *
+   * @param logger A logger to use for all messages and debug info.
+   */
+  static GRPCManagerImplementationFactoryPtr make(const std::string& channel,
+                                                  log::LoggerInterfacePtr logger);
 
   ~GRPCManagerImplementationFactory() override;
 
@@ -45,6 +54,9 @@ class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
   [[nodiscard]] managerApi::ManagerInterfacePtr instantiate(const Identifier& identifier) override;
 
  private:
+  explicit GRPCManagerImplementationFactory(const std::string& channel,
+                                            log::LoggerInterfacePtr logger);
+
   std::unique_ptr<GRPCManagerImplementationFactoryClient> client_;
   std::string channel_;
 };

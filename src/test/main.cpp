@@ -41,7 +41,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
   openassetio::log::LoggerInterfacePtr logger = SeverityFilter::make(ConsoleLogger::make());
 
   GRPCManagerImplementationFactoryPtr implFactory =
-      std::make_shared<GRPCManagerImplementationFactory>("0.0.0.0:50051", logger);
+      GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
 
   openassetio::hostApi::HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
 
