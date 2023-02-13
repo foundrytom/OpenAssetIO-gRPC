@@ -63,3 +63,4 @@ target_compile_definitions(openassetio_grpc_grpc_proto PRIVATE _GLIBCXX_USE_CXX1
 add_subdirectory(server)
 add_subdirectory(openassetio-grpc)
 add_subdirectory(test)
+add_subdirectory(perf)
