@@ -2,11 +2,11 @@
 
 ## Goal
 
-Provide a low-friction way for hosts integrate OpenAssetIO such that
-side-effects on it's runtime are minimised.
+Provide a low-friction way for hosts to integrate OpenAssetIO such that
+side-effects on its runtime are minimised.
 
 > **Note:**
-> This is a proof-or-concept project that aims to explore and understand
+> This is a proof-of-concept project that aims to explore and understand
 > the potential benefits, and costs of using gRPC to achieve this goal.
 > The code is by no means well robust or well tested.
 
@@ -106,7 +106,7 @@ successfully built the various components.
 The `openassetio-grpc-server` binary receives requests over gRPC and
 fulfills them using managers it instantiates using the usual means (i.e
 the `PythonPluginSystemManagerImplementationFactory`). As such, it links
-to Python. This means we needs to set up a few env vars before it can be
+to Python. This means we need to set up a few env vars before it can be
 run:
 
 ```shell
@@ -182,7 +182,7 @@ $ ./build/dist/openassetio-grpc-testhost bal:///anAsset
 ## Notes and limitations
 
 - There is currently very little in the way of error handling, the
-  unhappy path will most likely cause either the test host of server to
+  unhappy path will most likely cause either the test host or server to
   fall over.
 
 - No conscious effort has been made to optimize the implementation or
