@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2013-2023 The Foundry Visionmongers Ltd
 
+find_package(Catch2 REQUIRED)
+
 # Fine OpenAssetIO as a CMake package
 find_package(OpenAssetIO REQUIRED)
 

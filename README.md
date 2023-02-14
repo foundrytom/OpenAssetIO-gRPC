@@ -55,8 +55,7 @@ There are three components to this project:
   Hosts.
 - The `openassetio-grpc-server` binary that instantiates managers to
   service the bridged API requests.
-- The `openassetio-grpc-testhost` that provides a high-level
-  integration example.
+- The `openassetio-grpc-test` high-level integration test suite.
 
 ### Building
 
@@ -134,9 +133,9 @@ $ ./build/dist/openassetio-grpc-server
        info: Server listening on 0.0.0.0:50051
 ```
 
-### Test host
+### Test suite
 
-The `openassetio-grpc-testhost` is a simple C++ CLI tool that uses
+The `openassetio-grpc-test` is a simple C++ test suite that uses
 the gRPC bridge to resolve a string through the default configured
 manager (see [here]("https://openassetio.github.io/OpenAssetIO/classopenassetio_1_1v1_1_1host_api_1_1_manager_factory.html#a8b6c44543faebcb1b441bbf63c064c76)
 for more info).
@@ -151,32 +150,19 @@ export LD_LIBRARY_PATH=./build/dist/lib:/path/to/OpenAssetIO/libs
 export OPENASSETIO_LOGGING_SEVERITY=0
 ```
 
-As the test host uses the default manager config mechanism, we can use
-the included BAL setup for a quick test:
+As the test host uses the default manager mechanism, so we need
+to use the supplied config.
 
 ```bash
 export OPENASSETIO_DEFAULT_CONFIG=./openassetio_conf.toml
 ```
 
-Running the test host with a valid entity ref from the test library
-should return some data:
+Running the tests should hopefully then pass.
 
 ```bash
-$ ./build/dist/openassetio-grpc-testhost bal:///anAsset
-       info: Available managers:
-   debugApi: gRPC: Instantiated 'org.openassetio.examples.manager.bal' [0x7fb2c8003c40]
-       info: Basic Asset Library 📖 [org.openassetio.examples.manager.bal]
-       info: Done
-       info: Default manager:
-      debug: Loading default manager config from './openassetio_conf.toml' [OPENASSETIO_DEFAULT_CONFIG]
-   debugApi: gRPC: Instantiated 'org.openassetio.examples.manager.bal' [0x7fb2c8005d70]
-       info: Basic Asset Library 📖
-       info: Management Policy for openassetio-mediacreation:content.LocatableContent [read]:
-       info: openassetio-mediacreation:managementPolicy.Managed
-       info: Management Policy for openassetio-mediacreation:content.LocatableContent [write]:
-       info: Resolving bal:///anAsset
-       info: openassetio-mediacreation:content.LocatableContent: file:///dev/null
-
+$ ./build/dist/openassetio-grpc-test
+===============================================================================
+All tests passed (7 assertions in 1 test case)
 ```
 
 ## Notes and limitations

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
+
 #include <iostream>
 #include <memory>
 
@@ -18,6 +21,9 @@
 using openassetio::Context;
 using openassetio::ContextPtr;
 using openassetio::EntityReference;
+using openassetio::TraitsDataPtr;
+using openassetio::hostApi::HostInterface;
+using openassetio::hostApi::HostInterfacePtr;
 using openassetio::hostApi::ManagerFactory;
 using openassetio::hostApi::ManagerFactoryPtr;
 using openassetio::hostApi::ManagerPtr;
@@ -34,7 +40,7 @@ using openassetio::log::SeverityFilter;
  * reference, and resolve it with the LocatableContentTrait.
  */
 
-class TestHostInterface : public openassetio::hostApi::HostInterface {
+class TestHostInterface : public HostInterface {
   [[nodiscard]] openassetio::Identifier identifier() const override {
     return "org.openassetio.gRPC.testHost";
   }
@@ -44,93 +50,77 @@ class TestHostInterface : public openassetio::hostApi::HostInterface {
   }
 };
 
-using openassetio::grpc::GRPCManagerImplementationFactory;
-using openassetio::grpc::GRPCManagerImplementationFactoryPtr;
+static const std::string kIdentifierBAL = "org.openassetio.examples.manager.bal";
+static const std::string kLocatableContentTraitId =
+    "openassetio-mediacreation:content.LocatableContent";
+static const std::string kManagedTraitId = "openassetio-mediacreation:managementPolicy.Managed";
+static const std::string kAnEntityRefString = "bal:///anAsset";
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
-  // Bootstrap API
+SCENARIO("gRPC Manager Factory relays methods and returns expected response") {
+  GIVEN("A ManagerFactory configured with the gRPC implementation factory") {
+    auto logger = SeverityFilter::make(ConsoleLogger::make());
+    auto implFactory =
+        openassetio::grpc::GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
+    HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
+    ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
 
-  openassetio::log::LoggerInterfacePtr logger = SeverityFilter::make(ConsoleLogger::make());
+    WHEN("Available managers are queried") {
+      const auto available = factory->availableManagers();
 
-  // Use the gRPC factory instead of the python one
-  GRPCManagerImplementationFactoryPtr implFactory =
-      GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
-
-  openassetio::hostApi::HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
-
-  ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
-
-  // Introspect available managers (from the servers perspective)
-
-  logger->info("Available managers:");
-  for (auto& [identifier, detail] : factory->availableManagers()) {
-    logger->info(detail.displayName + " [" + detail.identifier + "]");
-  }
-
-  // Initialize the default manager
-
-  logger->info("Default manager:");
-  ManagerPtr defaultManager =
-      factory->defaultManagerForInterface(hostInterface, implFactory, logger);
-  if (!defaultManager) {
-    logger->info("  No default manager configured");
-    return 1;
-  }
-  logger->info("  " + defaultManager->displayName());
-
-  // Check managementPolicy
-
-  ContextPtr context = Context::make();
-
-  static const std::string kTraitId = "openassetio-mediacreation:content.LocatableContent";
-
-  {
-    logger->info("Management Policy for " + kTraitId + " [read]:");
-    context->access = Context::Access::kRead;
-    const auto policies = defaultManager->managementPolicy({{kTraitId}}, context);
-    for (const openassetio::trait::TraitId& id : policies[0]->traitSet()) {
-      logger->info(id);
+      THEN("BAL is available") {
+        REQUIRE_FALSE(available.find(kIdentifierBAL) == available.end());
+      }
+      AND_THEN("BALs entry contains the corrent display name, identifier and info") {
+        const auto& detail = available.find(kIdentifierBAL)->second;
+        REQUIRE(detail.identifier == kIdentifierBAL);
+        REQUIRE(detail.displayName == "Basic Asset Library 📖");
+      }
     }
-  }
-  {
-    logger->info("Management Policy for " + kTraitId + " [write]:");
-    context->access = Context::Access::kWrite;
-    const auto policies = defaultManager->managementPolicy({{kTraitId}}, context);
-    for (const openassetio::trait::TraitId& id : policies[0]->traitSet()) {
-      logger->info(id);
-    }
-  }
 
-  // Resolve the first arg if we have one
+    AND_WHEN("The default manager is initialized") {
+      ManagerPtr defaultManager =
+          factory->defaultManagerForInterface(hostInterface, implFactory, logger);
 
-  if (argc == 1) {
-    logger->debug("Nothing to resolve");
-    return 0;
-  }
+      AND_THEN("The default manager is BAL") {
+        REQUIRE(defaultManager->identifier() == kIdentifierBAL);
+      }
 
-  EntityReference ref = defaultManager->createEntityReference(argv[1]);
-  logger->info("Resolving " + ref.toString());
+      GIVEN("A suitable read context") {
+        ContextPtr context = Context::make();
+        context->access = Context::Access::kRead;
 
-  context->access = Context::Access::kRead;
-  defaultManager->resolve(
-      {ref}, {kTraitId}, context,
-      [&logger](std::size_t /*unused*/, const openassetio::TraitsDataPtr& data) {
-        // We really need C++ trait gen!
-        if (data->hasTrait(kTraitId)) {
-          openassetio::trait::property::Value val;
-          if (data->getTraitProperty(&val, kTraitId, "location")) {
-            // @todo Type check
-            logger->info(kTraitId + ": " + std::get<openassetio::Str>(val));
-          } else {
-            logger->info(kTraitId + ": No location data");
+        WHEN("managementPolicy is queried for the LocatableContentTrait") {
+          const auto policies =
+              defaultManager->managementPolicy({{kLocatableContentTraitId}}, context);
+          THEN("the trait is managed") {
+            const auto traitSet = policies[0]->traitSet();
+            REQUIRE_FALSE(traitSet.find(kManagedTraitId) == traitSet.end());
           }
-        } else {
-          logger->info(kTraitId + ": Trait not imbued");
         }
-      },
-      [&logger](std::size_t /*unused*/, const openassetio::BatchElementError& error) {
-        logger->error(error.message);
-      });
 
-  return 0;
+        AND_WHEN("The LocatableContentTrait is resolved for a test entity") {
+          EntityReference ref = defaultManager->createEntityReference(kAnEntityRefString);
+
+          TraitsDataPtr resolvedData;
+          defaultManager->resolve(
+              {ref}, {kLocatableContentTraitId}, context,
+              [&resolvedData](const size_t /* unused */, const TraitsDataPtr& data) {
+                resolvedData = data;
+              },
+              [](const size_t /* unused */, const openassetio::BatchElementError& error) {
+                // Should never run this code path, use the comparison
+                // to output the API error message to the shell to help
+                // debug.
+                REQUIRE(error.message == "<it will never be this>");
+              });
+
+          THEN("The location is the library value") {
+            openassetio::trait::property::Value val;
+            REQUIRE(resolvedData->getTraitProperty(&val, kLocatableContentTraitId, "location"));
+            REQUIRE(std::get<std::string>(val) == "file:///dev/null");
+          }
+        }
+      }
+    }
+  }
 }
