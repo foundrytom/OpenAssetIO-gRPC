@@ -56,6 +56,8 @@ There are three components to this project:
 - The `openassetio-grpc-server` binary that instantiates managers to
   service the bridged API requests.
 - The `openassetio-grpc-test` high-level integration test suite.
+- The `openassetio-grpc-perftest` benchmark test that compares direct
+  and gRPC bridged python manager interactions.
 
 ### Building
 
@@ -166,6 +168,15 @@ All tests passed (7 assertions in 1 test case)
 ```
 
 ## Notes and limitations
+
+- gRPC adds approximately an 6-7x overhead compared to local python per
+  call. The included `openassetio-grpc-perftest` binary illustrates
+  this.
+  - Increasing `OPENASSETIO_LOGGING_SEVERITY` >= `3` on the server side
+    reduces overhead as writing to the terminal is synchronous.
+  - Adding support for `kEntityReferenceMatchPrefix` to `Manager.cpp`
+    removes the bridged `isEntityReferenceString` calls gets this down
+    to 5x.
 
 - There is currently very little in the way of error handling, the
   unhappy path will most likely cause either the test host or server to
