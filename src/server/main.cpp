@@ -271,6 +271,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
   openassetio::hostApi::ManagerImplementationFactoryInterfacePtr implementationFactory_;
   // A simple map of handles to instances that keeps manager
   // implementations alive while needed.
+  // @todo Thread safety
   std::map<std::string, ManagerInterfacePtr> managers_;
 };
 
