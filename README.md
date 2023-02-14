@@ -68,7 +68,7 @@ be used along with `cmake --toolchain conan_paths.cmake` if so desired.
 Assuming your working directory is in the root of this repository.
 
 ```bash
-cmake -S . build
+cmake -S . build -DCMAKE_BUILD_TYPE=Release
 cmake --build build && cmake --install build
 ```
 
@@ -177,6 +177,7 @@ All tests passed (7 assertions in 1 test case)
   - Adding support for `kEntityReferenceMatchPrefix` to `Manager.cpp`
     removes the bridged `isEntityReferenceString` calls gets this down
     to 5x.
+  - Release builds are notable faster than debug.
 
 - There is currently very little in the way of error handling, the
   unhappy path will most likely cause either the test host or server to
