@@ -102,6 +102,48 @@ void directResolveSingle(Fixture& fixture) {
   }
 }
 
+void grpcResolveBatch(Fixture& fixture) {
+  std::vector<EntityReference> refs;
+  refs.reserve(fixture.callCount);
+  for (size_t i = 0; i < fixture.callCount; ++i) {
+    refs.push_back(fixture.gprcManager->createEntityReference(fixture.aBalRef));
+  }
+
+  fixture.gprcManager->resolve(
+      refs, fixture.traitSet, fixture.context,
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
+      [](std::size_t idx, const openassetio::TraitsDataPtr& data) {
+        (void)idx;
+        (void)data;
+      },
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
+      [](std::size_t idx, const openassetio::BatchElementError& error) {
+        (void)idx;
+        (void)error;
+      });
+}
+
+void directResolveBatch(Fixture& fixture) {
+  std::vector<EntityReference> refs;
+  refs.reserve(fixture.callCount);
+  for (size_t i = 0; i < fixture.callCount; ++i) {
+    refs.push_back(fixture.gprcManager->createEntityReference(fixture.aBalRef));
+  }
+
+  fixture.directManager->resolve(
+      refs, fixture.traitSet, fixture.context,
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
+      [](std::size_t idx, const openassetio::TraitsDataPtr& data) {
+        (void)idx;
+        (void)data;
+      },
+      // NOLINTNEXTLINE(performance-unnecessary-value-param)
+      [](std::size_t idx, const openassetio::BatchElementError& error) {
+        (void)idx;
+        (void)error;
+      });
+}
+
 ///////////////////////////////////////////////////////////
 
 /**
@@ -130,13 +172,19 @@ struct Benchmarker {
 
   static constexpr Idx kGRPResolveCaseIdx = 0;
   static constexpr Idx kDirectResolveCaseIdx = 1;
+  static constexpr Idx kGRPResolveBatchCaseIdx = 2;
+  static constexpr Idx kDirectResolveBatchCaseIdx = 3;
 
   /// Cases to test.
   static inline const std::array kCases{Case{&grpcResolveSingle, "grpcResolve"},
-                                        Case{&directResolveSingle, "directResolve"}};
+                                        Case{&directResolveSingle, "directResolve"},
+                                        Case{&grpcResolveBatch, "grpcResolveBatched"},
+                                        Case{&directResolveBatch, "directResolveBatch"}};
 
   /// Pairs of cases to compare as ratio of their timings.
-  static constexpr std::array kRatioPairs{RatioPair{kGRPResolveCaseIdx, kDirectResolveCaseIdx}};
+  static constexpr std::array kRatioPairs{
+      RatioPair{kGRPResolveCaseIdx, kDirectResolveCaseIdx},
+      RatioPair{kGRPResolveBatchCaseIdx, kDirectResolveBatchCaseIdx}};
 
   using CasesTiming = std::array<Duration, kCases.size()>;
 
