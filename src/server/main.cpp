@@ -140,6 +140,18 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
     return Status::CANCELLED;
   }
 
+  Status Info([[maybe_unused]] ServerContext* context,
+                     const openassetio_grpc_proto::InfoRequest* request,
+                     ::openassetio_grpc_proto::InfoResponse* response) override {
+    if (ManagerInterfacePtr manager = managerFromHandle(request->handle())) {
+      logger_->debugApi(request->handle() + " info()");
+      openassetio::grpc::infoDictionaryToMsg(manager->info(), response->mutable_info());
+      return Status::OK;
+    }
+    logger_->error("DisplayName: Unknown handle " + request->handle());
+    return Status::CANCELLED;
+  }
+
   Status Initialize([[maybe_unused]] ServerContext* context,
                     const openassetio_grpc_proto::InitializeRequest* request,
                     [[maybe_unused]] ::openassetio_grpc_proto::EmptyResponse* response) override {

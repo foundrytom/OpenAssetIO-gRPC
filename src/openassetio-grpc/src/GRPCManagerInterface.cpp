@@ -66,6 +66,20 @@ class GRPCManagerInterfaceClient {
     return response.displayname();
   }
 
+  InfoDictionary info() {
+    openassetio_grpc_proto::InfoRequest request;
+    openassetio_grpc_proto::InfoResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+
+    Status status = stub_->Info(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+    return msgToInfoDictionary(response.info());
+  }
+
   void initialize(const InfoDictionary &managerSettings,
                   const managerApi::HostSessionPtr &hostSession) {
     openassetio_grpc_proto::InitializeRequest request;
@@ -210,6 +224,8 @@ GRPCManagerInterface::~GRPCManagerInterface() {
 Identifier GRPCManagerInterface::identifier() const { return client_->identifier(); }
 
 Str GRPCManagerInterface::displayName() const { return client_->displayName(); }
+
+InfoDictionary GRPCManagerInterface::info() const { return client_->info(); }
 
 trait::TraitsDatas GRPCManagerInterface::managementPolicy(
     [[maybe_unused]] const trait::TraitSets &traitSets,

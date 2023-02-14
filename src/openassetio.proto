@@ -107,6 +107,15 @@ message DisplayNameResponse {
 }
 
 
+message InfoRequest {
+    string handle = 1;
+}
+
+message InfoResponse {
+    InfoDictMsg info = 1;
+}
+
+
 message InitializeRequest {
     string handle = 1;
     HostSessionMsg hostSession = 2;
@@ -174,6 +183,7 @@ service ManagerProxy  {
     // ManagerInterface methods
     rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
+    rpc Info(InfoRequest) returns (InfoResponse);
     rpc Initialize(InitializeRequest) returns (EmptyResponse);
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
     rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);

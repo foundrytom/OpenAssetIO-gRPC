@@ -49,6 +49,7 @@ class OPENASSETIO_GRPC_EXPORT GRPCManagerInterface : public managerApi::ManagerI
 
   Identifier identifier() const override;
   Str displayName() const override;
+  InfoDictionary info() const override;
 
   void initialize(InfoDictionary managerSettings,
                   const managerApi::HostSessionPtr &hostSession) override;
