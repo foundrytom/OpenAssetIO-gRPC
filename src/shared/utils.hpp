@@ -3,6 +3,7 @@
 #pragma once
 
 #include <openassetio/Context.hpp>
+#include <openassetio/EntityReference.hpp>
 #include <openassetio/InfoDictionary.hpp>
 #include <openassetio/TraitsData.hpp>
 #include <openassetio/managerApi/HostSession.hpp>
@@ -71,6 +72,21 @@ void traitsDataToMsg(const TraitsDataConstPtr& data,
 
 trait::TraitSet msgToTraitSet(const openassetio_grpc_proto::TraitSetMsg& msg);
 void traitSetToMsg(const trait::TraitSet& set, openassetio_grpc_proto::TraitSetMsg* outMsg);
+
+/**
+* @}
+*/
+
+
+/*
+* @}
+*
+* EntityReference
+* @{
+*/
+
+
+EntityReference msgToEntityReference(const std::string& msg);
 
 /**
 * @}

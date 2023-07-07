@@ -55,6 +55,7 @@ static const std::string kLocatableContentTraitId =
     "openassetio-mediacreation:content.LocatableContent";
 static const std::string kManagedTraitId = "openassetio-mediacreation:managementPolicy.Managed";
 static const std::string kAnEntityRefString = "bal:///anAsset";
+static const std::string kANewEntityRefString = "bal:///aNewAssetThatDoesntExistYet";
 
 SCENARIO("gRPC Manager Factory relays methods and returns expected response") {
   GIVEN("A ManagerFactory configured with the gRPC implementation factory") {
@@ -118,6 +119,49 @@ SCENARIO("gRPC Manager Factory relays methods and returns expected response") {
             openassetio::trait::property::Value val;
             REQUIRE(resolvedData->getTraitProperty(&val, kLocatableContentTraitId, "location"));
             REQUIRE(std::get<std::string>(val) == "file:///dev/null");
+          }
+        }
+      }
+
+      GIVEN("A suitable write context") {
+        ContextPtr context = Context::make();
+        context->access = Context::Access::kWrite;
+
+        AND_WHEN("The a new entity is preflighted") {
+          EntityReference ref = defaultManager->createEntityReference(kANewEntityRefString);
+
+          EntityReference workingReference =
+              defaultManager->preflight(ref, {kLocatableContentTraitId}, context);
+
+          THEN("a working entity refrence is returned") {
+            // BAL returns the input ref verbatim for now
+            REQUIRE(workingReference.toString() == kANewEntityRefString);
+          }
+
+          AND_WHEN("The working entity reference is registered") {
+            // Tests use BAL, which will happily store/recall any old data
+            auto entityData = openassetio::TraitsData::make();
+            auto aUniqueValue = reinterpret_cast<openassetio::Int>(entityData.get());
+            entityData->setTraitProperty("some_trait", "some_value", aUniqueValue);
+
+            EntityReference finalReference = defaultManager->register_(ref, entityData, context);
+
+            THEN("A final entity reference is returned") {
+              // BAL mirrors the input ref (at the time of going to press)
+              REQUIRE(finalReference.toString() == kANewEntityRefString);
+            }
+
+            AND_WHEN("The final rerernce is resolved") {
+              context->access = Context::Access::kRead;
+              TraitsDataPtr registeredData =
+                  defaultManager->resolve(finalReference, {"some_trait"}, context);
+
+              THEN("The registered data is returned") {
+                openassetio::trait::property::Value value;
+                registeredData->getTraitProperty(&value, "some_trait", "some_value");
+                REQUIRE(*std::get_if<openassetio::Int>(&value) == aUniqueValue);
+              }
+            }
           }
         }
       }

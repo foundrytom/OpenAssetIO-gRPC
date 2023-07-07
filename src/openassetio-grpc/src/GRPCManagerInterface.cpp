@@ -142,18 +142,6 @@ class GRPCManagerInterfaceClient {
     return response.is();
   }
 
-  // Management
-
-  void destroy() {
-    openassetio_grpc_proto::DestroyRequest request;
-    openassetio_grpc_proto::EmptyResponse response;
-    ClientContext context;
-
-    request.set_handle(handle_);
-
-    stub_->Destroy(&context, request, &response);
-  }
-
   void resolve(const EntityReferences &entityReferences, const trait::TraitSet &traitSet,
                const ContextConstPtr &context, const managerApi::HostSessionPtr &hostSession,
                const GRPCManagerInterface::ResolveSuccessCallback &successCallback,
@@ -186,6 +174,91 @@ class GRPCManagerInterfaceClient {
             BatchElementError{BatchElementError::ErrorCode(error.code()), error.errormessage()});
       }
     }
+  }
+
+  void preflight(const EntityReferences &entityReferences, const trait::TraitSet &traitSet,
+                 const ContextConstPtr &context, const managerApi::HostSessionPtr &hostSession,
+                 const GRPCManagerInterface::PreflightSuccessCallback &successCallback,
+                 const BatchElementErrorCallback &errorCallback) {
+    openassetio_grpc_proto::PreflightRequest request;
+    openassetio_grpc_proto::PreflightResponse response;
+    ClientContext clientContext;
+
+    request.set_handle(handle_);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+    contextToMsg(context, request.mutable_context());
+    traitSetToMsg(traitSet, request.mutable_traitset());
+
+    for (const EntityReference &ref : entityReferences) {
+      *(request.add_entityreference()) = ref.toString();
+    }
+
+    Status status = stub_->Preflight(&clientContext, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    for (const auto &resultOrError : response.resultorerror()) {
+      if (resultOrError.has_result()) {
+        successCallback(resultOrError.index(), msgToEntityReference(resultOrError.result()));
+      } else {
+        const auto &error = resultOrError.error();
+        errorCallback(
+            resultOrError.index(),
+            BatchElementError{BatchElementError::ErrorCode(error.code()), error.errormessage()});
+      }
+    }
+  }
+
+  void register_(const EntityReferences &entityReferences,
+                const trait::TraitsDatas &entityTraitsDatas, const ContextConstPtr &context,
+                const managerApi::HostSessionPtr &hostSession,
+                const GRPCManagerInterface::RegisterSuccessCallback &successCallback,
+                const BatchElementErrorCallback &errorCallback) {
+    openassetio_grpc_proto::RegisterRequest request;
+    openassetio_grpc_proto::RegisterResponse response;
+    ClientContext clientContext;
+
+    request.set_handle(handle_);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+    contextToMsg(context, request.mutable_context());
+
+    for (const EntityReference &ref : entityReferences) {
+      *(request.add_entityreference()) = ref.toString();
+    }
+
+    for (const TraitsDataConstPtr data : entityTraitsDatas) {
+      auto *msg = request.add_traitsdata();
+      traitsDataToMsg(data, msg);
+    }
+
+    Status status = stub_->Register(&clientContext, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+
+    for (const auto &resultOrError : response.resultorerror()) {
+      if (resultOrError.has_result()) {
+        successCallback(resultOrError.index(), msgToEntityReference(resultOrError.result()));
+      } else {
+        const auto &error = resultOrError.error();
+        errorCallback(
+            resultOrError.index(),
+            BatchElementError{BatchElementError::ErrorCode(error.code()), error.errormessage()});
+      }
+    }
+  }
+
+  // Management
+
+  void destroy() {
+    openassetio_grpc_proto::DestroyRequest request;
+    openassetio_grpc_proto::EmptyResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+
+    stub_->Destroy(&context, request, &response);
   }
 
   const std::string &handle() const { return handle_; }
@@ -263,7 +336,10 @@ void GRPCManagerInterface::preflight(
     [[maybe_unused]] const ContextConstPtr &context,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const PreflightSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {}
+    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  client_->preflight(entityReferences, traitSet, context, hostSession, successCallback,
+                     errorCallback);
+}
 
 void GRPCManagerInterface::register_(
     [[maybe_unused]] const EntityReferences &entityReferences,
@@ -271,6 +347,9 @@ void GRPCManagerInterface::register_(
     [[maybe_unused]] const ContextConstPtr &context,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const RegisterSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {}
+    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  client_->register_(entityReferences, entityTraitsDatas, context, hostSession, successCallback,
+                    errorCallback);
+}
 
 };  // namespace openassetio::grpc

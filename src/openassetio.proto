@@ -165,6 +165,44 @@ message ManagementPolicyRequest {
     repeated ResultOrErrorMsg resultOrError = 1;
  }
 
+ message PreflightRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    ContextMsg context = 3;
+    TraitSetMsg traitSet = 4;
+    repeated string entityReference = 5;
+ }
+
+ message PreflightResponse {
+    message ResultOrErrorMsg {
+        uint64 index = 1;
+        oneof result_oneof {
+            string result = 2;
+            ErrorMsg error = 3;
+        }
+    }
+    repeated ResultOrErrorMsg resultOrError = 1;
+ }
+
+ message RegisterRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+    ContextMsg context = 3;
+    repeated string entityReference = 4;
+    repeated TraitsDataMsg traitsData = 5;
+ }
+
+ message RegisterResponse {
+    message ResultOrErrorMsg {
+        uint64 index = 1;
+        oneof result_oneof {
+            string result = 2;
+            ErrorMsg error = 3;
+        }
+    }
+    repeated ResultOrErrorMsg resultOrError = 1;
+ }
+
 
 /*
  * Service definition
@@ -188,6 +226,9 @@ service ManagerProxy  {
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
     rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);
     rpc Resolve(ResolveRequest) returns (ResolveResponse);
+    rpc Preflight(PreflightRequest) returns (PreflightResponse);
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+
     // Lifetime management
     rpc Destroy(DestroyRequest) returns (EmptyResponse);
 };

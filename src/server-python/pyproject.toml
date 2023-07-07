@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The Foundry Visionmongers Ltd
+[project]
+name = "openassetio-grpc-server-python"
+version = "1.0.0a1"
+requires-python = ">=3.7"
+dependencies = [
+    "openassetio == 1.0.0a12",
+    "grpcio",
+    "grpcio-tools"
+]
+
+[build-system]
+requires = [
+    "setuptools>=65.5.0"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where =["python"]
+
+[tool.pylint.format]
+max-line-length = 99
+
+[tool.black]
+line-length = 99
+
+# NB: This requires the use of pyproject-flake8
+[tool.flake8]
+max-line-length = 99
+extend-ignore = "E266,"

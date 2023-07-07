@@ -179,4 +179,10 @@ void traitSetToMsg(const trait::TraitSet& set, openassetio_grpc_proto::TraitSetM
   }
 }
 
+// EntityReference
+//
+EntityReference msgToEntityReference(const std::string &msg) {
+  return EntityReference(msg);
+}
+
 }  // namespace openassetio::grpc
