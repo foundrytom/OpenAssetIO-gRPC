@@ -99,7 +99,7 @@ ContextPtr msgToContext(const openassetio_grpc_proto::ContextMsg& msg) {
                        nullptr  // TODO(tc) add state bridge
   );
   // Ensure the manager can determine it is being proxied.
-  context->locale->addTrait("openasseio-grpc:locale.GRPCProxy");
+  context->locale->addTrait("openassetio-grpc:locale.GRPCProxy");
   return context;
 }
 
