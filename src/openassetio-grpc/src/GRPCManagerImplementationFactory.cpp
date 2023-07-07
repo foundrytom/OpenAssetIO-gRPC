@@ -48,11 +48,11 @@ class GRPCManagerImplementationFactoryClient {
       throw std::runtime_error(status.error_message());
     }
 
-    const int count = response.identifer_size();
+    const int count = response.identifier_size();
     std::vector<std::string> identifiers;
     identifiers.reserve(size_t(count));
     for (int i = 0; i < count; ++i) {
-      identifiers.push_back(response.identifer(i));
+      identifiers.push_back(response.identifier(i));
     }
     return identifiers;
   }

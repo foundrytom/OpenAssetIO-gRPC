@@ -81,7 +81,7 @@ class ManagerProxyImpl final : public openassetio_grpc_proto::ManagerProxy::Serv
                      [[maybe_unused]] const openassetio_grpc_proto::EmptyRequest* request,
                      ::openassetio_grpc_proto::IdentifiersResponse* response) override {
     for (const openassetio::Identifier& identifier : implementationFactory_->identifiers()) {
-      response->add_identifer(identifier);
+      response->add_identifier(identifier);
     }
     return Status::OK;
   };
