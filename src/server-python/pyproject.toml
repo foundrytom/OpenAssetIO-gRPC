@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The Foundry Visionmongers Ltd
 [project]
-name = "openassetio-grpc-server-python"
+name = "openassetio-grpc-server"
 version = "1.0.0a1"
 requires-python = ">=3.7"
 dependencies = [
@@ -12,7 +12,7 @@ dependencies = [
 
 [build-system]
 requires = [
-    "setuptools>=65.5.0"
+    "setuptools>=65.5.0",
 ]
 build-backend = "setuptools.build_meta"
 

@@ -104,6 +104,16 @@ successfully built the various components.
 
 ### Server
 
+The preferred approach is to use the Python server implementation, as
+this greatly simplifies the build and runtime environment setup:
+
+```shell
+python -m pip install ./src/server-python
+python -m openassetio_grpc_server
+```
+
+There is also a less featured/experimental C++ Server available too:
+
 The `openassetio-grpc-server` binary receives requests over gRPC and
 fulfills them using managers it instantiates using the usual means (i.e
 the `PythonPluginSystemManagerImplementationFactory`). As such, it links
@@ -157,6 +167,13 @@ to use the supplied config.
 
 ```bash
 export OPENASSETIO_DEFAULT_CONFIG=./openassetio_conf.toml
+```
+
+This requires BAL, if you're using the python server, you can use Pip to
+install it:
+
+```shell
+python -m pip install openassetio_manager_bal
 ```
 
 Running the tests should hopefully then pass.
