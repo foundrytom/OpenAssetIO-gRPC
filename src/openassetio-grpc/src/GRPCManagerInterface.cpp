@@ -145,7 +145,7 @@ class GRPCManagerInterfaceClient {
   void resolve(const EntityReferences &entityReferences, const trait::TraitSet &traitSet,
                const ContextConstPtr &context, const managerApi::HostSessionPtr &hostSession,
                const GRPCManagerInterface::ResolveSuccessCallback &successCallback,
-               const BatchElementErrorCallback &errorCallback) {
+               const GRPCManagerInterface::BatchElementErrorCallback &errorCallback) {
     openassetio_grpc_proto::ResolveRequest request;
     openassetio_grpc_proto::ResolveResponse response;
     ClientContext clientContext;
@@ -179,7 +179,7 @@ class GRPCManagerInterfaceClient {
   void preflight(const EntityReferences &entityReferences, const trait::TraitSet &traitSet,
                  const ContextConstPtr &context, const managerApi::HostSessionPtr &hostSession,
                  const GRPCManagerInterface::PreflightSuccessCallback &successCallback,
-                 const BatchElementErrorCallback &errorCallback) {
+                 const GRPCManagerInterface::BatchElementErrorCallback &errorCallback) {
     openassetio_grpc_proto::PreflightRequest request;
     openassetio_grpc_proto::PreflightResponse response;
     ClientContext clientContext;
@@ -214,7 +214,7 @@ class GRPCManagerInterfaceClient {
                 const trait::TraitsDatas &entityTraitsDatas, const ContextConstPtr &context,
                 const managerApi::HostSessionPtr &hostSession,
                 const GRPCManagerInterface::RegisterSuccessCallback &successCallback,
-                const BatchElementErrorCallback &errorCallback) {
+                const GRPCManagerInterface::BatchElementErrorCallback &errorCallback) {
     openassetio_grpc_proto::RegisterRequest request;
     openassetio_grpc_proto::RegisterResponse response;
     ClientContext clientContext;

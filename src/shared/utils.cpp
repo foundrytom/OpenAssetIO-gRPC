@@ -59,17 +59,19 @@ void infoDictionaryToMsg(const InfoDictionary& info, openassetio_grpc_proto::Inf
   auto* strings = outMsg->mutable_strings();
 
   for (const auto& [key, value] : info) {
+    // Clang won't compile if we attempt to capture a structured binding
+    const auto keyByValue = key;
     std::visit(
-        [&key, &bools, &ints, &floats, &strings](auto&& arg) {
+        [&keyByValue, &bools, &ints, &floats, &strings](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
           if constexpr (std::is_same_v<T, openassetio::Bool>) {
-            bools->insert({key, arg});
+            bools->insert({keyByValue, arg});
           } else if constexpr (std::is_same_v<T, openassetio::Int>) {
-            ints->insert({key, arg});
+            ints->insert({keyByValue, arg});
           } else if constexpr (std::is_same_v<T, openassetio::Float>) {
-            floats->insert({key, arg});
+            floats->insert({keyByValue, arg});
           } else if constexpr (std::is_same_v<T, openassetio::Str>) {
-            strings->insert({key, arg});
+            strings->insert({keyByValue, arg});
           }
         },
         value);
