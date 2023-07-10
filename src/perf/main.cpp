@@ -349,7 +349,7 @@ struct Benchmarker {
     Fixture fixture;
 
     auto grpcImplFactory =
-        openassetio::grpc::GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
+        openassetio::grpc::GRPCManagerImplementationFactory::make("0.0.0.0:51234", logger);
 
     fixture.gprcManager =
         ManagerFactory::defaultManagerForInterface(hostInterface, grpcImplFactory, logger);

@@ -297,7 +297,7 @@ void runServer() {
     Py_BEGIN_ALLOW_THREADS
 
       // @todo Allow this to be configured
-    std::string serverAddress("0.0.0.0:50051");
+    std::string serverAddress("0.0.0.0:51234");
 
     auto logger = SeverityFilter::make(ConsoleLogger::make());
 

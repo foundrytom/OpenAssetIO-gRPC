@@ -14,7 +14,7 @@ def serve():
 
     logger = ConsoleLogger()
 
-    port = "50051"
+    port = "51234"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     openassetio_pb2_grpc.add_ManagerProxyServicer_to_server(Server(logger), server)
     server.add_insecure_port("[::]:" + port)

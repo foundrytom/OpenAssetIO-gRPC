@@ -61,7 +61,7 @@ SCENARIO("gRPC Manager Factory relays methods and returns expected response") {
   GIVEN("A ManagerFactory configured with the gRPC implementation factory") {
     auto logger = SeverityFilter::make(ConsoleLogger::make());
     auto implFactory =
-        openassetio::grpc::GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
+        openassetio::grpc::GRPCManagerImplementationFactory::make("0.0.0.0:51234", logger);
     HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
     ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
 

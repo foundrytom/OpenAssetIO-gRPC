@@ -87,7 +87,7 @@ brevity). NB. Port configuration is currently hard coded.
 
 ```cpp
 auto logger = ...
-auto implFactory = GRPCManagerImplementationFactory::make("0.0.0.0:50051", logger);
+auto implFactory = GRPCManagerImplementationFactory::make("0.0.0.0:51234", logger);
 auto hostInterface = ...
 auto mgrFactory = ManagerFactory::make(hostInterface, implFactory, logger);
 ```
@@ -132,7 +132,7 @@ You should now be able to run the server:
 
 ```bash
 $ ./build/dist/openassetio-grpc-server
-       info: Server listening on 0.0.0.0:50051
+       info: Server listening on 0.0.0.0:51234
 ```
 
 ### Test suite
