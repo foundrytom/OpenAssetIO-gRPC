@@ -205,14 +205,17 @@ All tests passed (7 assertions in 1 test case)
 ## Notes and limitations
 
 - gRPC adds approximately an 6-7x overhead compared to local python per
-  call. The included `openassetio-grpc-perftest` binary illustrates
-  this.
+  call in raw terms. The included `openassetio-grpc-perftest` binary
+  illustrates this.
   - Increasing `OPENASSETIO_LOGGING_SEVERITY` >= `3` on the server side
     reduces overhead as writing to the terminal is synchronous.
   - Adding support for `kEntityReferenceMatchPrefix` to `Manager.cpp`
     removes the bridged `isEntityReferenceString` calls gets this down
     to 5x.
   - Release builds are notable faster than debug.
+  - Once a real-world network latency is included (e.g. BAL's default
+    simulated latency of 10ms), then the overnead is inconsequential,
+    and query batching becomes the main factor.
 
 - There is currently very little in the way of error handling, the
   unhappy path will most likely cause either the test host or server to
