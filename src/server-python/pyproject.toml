@@ -16,6 +16,9 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project.scripts]
+openassetio-grpc-server = "openassetio_grpc_server:__main__"
+
 [tool.setuptools.packages.find]
 where =["python"]
 

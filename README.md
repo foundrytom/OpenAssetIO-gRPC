@@ -116,7 +116,7 @@ this greatly simplifies the build and runtime environment setup:
 
 ```shell
 python -m pip install ./src/server-python
-python -m openassetio_grpc_server
+openassetio-grpc-server
 ```
 
 The `openassetio-grpc-server` receives requests over gRPC and wrangles
