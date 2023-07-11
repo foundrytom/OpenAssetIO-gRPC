@@ -18,38 +18,60 @@ class GRPCManagerInterfaceClient;
  * An implementation of the OpenAssetIO MangerInterface that forwards
  * all methods to an out-of-process gRPC service.
  *
- * @note This class isn't currently intended for direct use. See the
- * GRPCManagerImplementationFactory instead.
+ * @todo HostInterface bridging is naive, in that we always re-send
+ * the displayName/identifier with each request. This is a downside to
+ * working at the ManagerInterface level - as we don't inherently know
+ * if the host session is the same as last time. There are bunch of
+ * ways we could address this, including creating a two-way bridge.
  */
 class OPENASSETIO_GRPC_EXPORT GRPCManagerInterface : public managerApi::ManagerInterface {
  public:
-
   using RemoteHandle = openassetio::Str;
+
+  static const std::string kIdentifiergRPCManager;
+
+  static const std::string kSettingChannel;
+  static const std::string kSettingHandle;
+
+  /**
+   * Constructs an interface that can be used for generic connections to
+   * an existing channel with a pre-initialized manager.
+   *
+   * In this mode, pre-initialization and initialization activities are
+   * limited to configuring gRPC communications. If full control of the
+   * target handle is needed, then the alternate constructor should be
+   * used with `ownsHandle` set to true.
+   *
+   * This is suitable for use with the (future) C++ plugin system,
+   * allowing any gRPC service implementing `openassetio.proto` to be
+   * used as a manager in an un-modified host.
+   */
+  explicit GRPCManagerInterface();
 
   /**
    * @param handle The server-provided handle for the specific remote
    * interface instance to be wrapped. This string is supplied in the
    * InstantiateResponse message.
    *
+   * When this constructor is used, the interface will operate in
+   * 'transparent bridge' mode, and allow pre-initialization,
+   * initialization and destruction of configured remote handle.
+   *
+   * This is used by the GRPCManagerImplementationFactory to proxy API
+   * requests out-of-process.
+
    * @param channel The address/port of the service that holds the
    * instance referred to by handle.
-   *
-   * @todo Make these optional, so they can be supplied via manager
-   * settings in `initialize`. This would allow this to then be
-   * user-configured rather than relying on the gRPC specific factory.
-   *
-   * @todo HostInterface bridging is naive, in that we always re-send
-   * the displayName/identifier with each request. This is a downside to
-   * working at the ManagerInterface level - as we don't inherently know
-   * if the host session is the same as last time. There are bunch of
-   * ways we could address this, including creating a two-way bridge.
    */
-  explicit GRPCManagerInterface(RemoteHandle handle, const std::string& channel);
+  explicit GRPCManagerInterface(RemoteHandle handle, const std::string &channel);
+
   ~GRPCManagerInterface() override;
 
   Identifier identifier() const override;
   Str displayName() const override;
   InfoDictionary info() const override;
+
+  InfoDictionary settings(const managerApi::HostSessionPtr &hostSession) const override;
 
   void initialize(InfoDictionary managerSettings,
                   const managerApi::HostSessionPtr &hostSession) override;
@@ -80,6 +102,8 @@ class OPENASSETIO_GRPC_EXPORT GRPCManagerInterface : public managerApi::ManagerI
  private:
   RemoteHandle handle_;
   std::unique_ptr<GRPCManagerInterfaceClient> client_;
+  InfoDictionary settings_;
+  bool ownsHandle_;
 };
 
 }  // namespace openassetio::grpc

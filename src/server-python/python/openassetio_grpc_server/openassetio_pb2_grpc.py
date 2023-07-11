@@ -48,6 +48,11 @@ class ManagerProxyStub(object):
                 request_serializer=openassetio__pb2.InfoRequest.SerializeToString,
                 response_deserializer=openassetio__pb2.InfoResponse.FromString,
                 )
+        self.Settings = channel.unary_unary(
+                '/openassetio_grpc_proto.ManagerProxy/Settings',
+                request_serializer=openassetio__pb2.SettingsRequest.SerializeToString,
+                response_deserializer=openassetio__pb2.SettingsResponse.FromString,
+                )
         self.Initialize = channel.unary_unary(
                 '/openassetio_grpc_proto.ManagerProxy/Initialize',
                 request_serializer=openassetio__pb2.InitializeRequest.SerializeToString,
@@ -129,6 +134,12 @@ class ManagerProxyServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Settings(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Initialize(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -199,6 +210,11 @@ def add_ManagerProxyServicer_to_server(servicer, server):
                     servicer.Info,
                     request_deserializer=openassetio__pb2.InfoRequest.FromString,
                     response_serializer=openassetio__pb2.InfoResponse.SerializeToString,
+            ),
+            'Settings': grpc.unary_unary_rpc_method_handler(
+                    servicer.Settings,
+                    request_deserializer=openassetio__pb2.SettingsRequest.FromString,
+                    response_serializer=openassetio__pb2.SettingsResponse.SerializeToString,
             ),
             'Initialize': grpc.unary_unary_rpc_method_handler(
                     servicer.Initialize,
@@ -336,6 +352,23 @@ class ManagerProxy(object):
         return grpc.experimental.unary_unary(request, target, '/openassetio_grpc_proto.ManagerProxy/Info',
             openassetio__pb2.InfoRequest.SerializeToString,
             openassetio__pb2.InfoResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Settings(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/openassetio_grpc_proto.ManagerProxy/Settings',
+            openassetio__pb2.SettingsRequest.SerializeToString,
+            openassetio__pb2.SettingsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

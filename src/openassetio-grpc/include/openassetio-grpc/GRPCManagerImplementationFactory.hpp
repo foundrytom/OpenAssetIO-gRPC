@@ -37,6 +37,16 @@ OPENASSETIO_DECLARE_PTR(GRPCManagerImplementationFactory)
 class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
     : public hostApi::ManagerImplementationFactoryInterface {
  public:
+
+  /**
+   * The identifier of the underlying gRPC ManagerInterface.
+   *
+   * This can be used to directly talk to any gRPC service that
+   * implements the OpenAssetIO proto, rather than having the factory
+   * create and manage a server instance for you.
+   */
+  static const std::string kIdentifiergRPCManager;
+
   /**
    * Constructs a new instance of the factory.
    *
@@ -48,13 +58,20 @@ class OPENASSETIO_GRPC_EXPORT GRPCManagerImplementationFactory final
   static GRPCManagerImplementationFactoryPtr make(const std::string& channel,
                                                   log::LoggerInterfacePtr logger);
 
+  /**
+  * An alternate constructor that can be used when connecting to
+  * existing served manager instance, and not using fully
+  * proxied manager instantiation.
+  */
+  static GRPCManagerImplementationFactoryPtr make(log::LoggerInterfacePtr logger);
+
   ~GRPCManagerImplementationFactory() override;
 
   [[nodiscard]] Identifiers identifiers() override;
   [[nodiscard]] managerApi::ManagerInterfacePtr instantiate(const Identifier& identifier) override;
 
  private:
-  explicit GRPCManagerImplementationFactory(const std::string& channel,
+  explicit GRPCManagerImplementationFactory(std::string channel,
                                             log::LoggerInterfacePtr logger);
 
   std::unique_ptr<GRPCManagerImplementationFactoryClient> client_;

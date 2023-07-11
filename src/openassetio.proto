@@ -116,6 +116,16 @@ message InfoResponse {
 }
 
 
+message SettingsRequest {
+    string handle = 1;
+    HostSessionMsg hostSession = 2;
+}
+
+message SettingsResponse {
+    InfoDictMsg settings = 1;
+}
+
+
 message InitializeRequest {
     string handle = 1;
     HostSessionMsg hostSession = 2;
@@ -222,6 +232,7 @@ service ManagerProxy  {
     rpc Identifier(IdentifierRequest) returns (IdentifierResponse);
     rpc DisplayName(DisplayNameRequest) returns (DisplayNameResponse);
     rpc Info(InfoRequest) returns (InfoResponse);
+    rpc Settings(SettingsRequest) returns (SettingsResponse);
     rpc Initialize(InitializeRequest) returns (EmptyResponse);
     rpc ManagementPolicy(ManagementPolicyRequest) returns (ManagementPolicyResponse);
     rpc IsEntityReferenceString(IsEntityReferenceStringRequest) returns (IsEntityReferenceStringResponse);

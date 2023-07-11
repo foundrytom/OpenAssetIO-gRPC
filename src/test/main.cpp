@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2013-2023 The Foundry Visionmongers Ltd
+#include "openassetio-grpc/GRPCManagerInterface.hpp"
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -56,6 +57,35 @@ static const std::string kLocatableContentTraitId =
 static const std::string kManagedTraitId = "openassetio-mediacreation:managementPolicy.Managed";
 static const std::string kAnEntityRefString = "bal:///anAsset";
 static const std::string kANewEntityRefString = "bal:///aNewAssetThatDoesntExistYet";
+
+SCENARIO("gRPC Manager Factory returns the gRPC interface") {
+  GIVEN("A ManagerFactory configured with the gRPC implementation factory") {
+    auto logger = SeverityFilter::make(ConsoleLogger::make());
+    auto implFactory = openassetio::grpc::GRPCManagerImplementationFactory::make(logger);
+    HostInterfacePtr hostInterface = std::make_shared<TestHostInterface>();
+    ManagerFactoryPtr factory = ManagerFactory::make(hostInterface, implFactory, logger);
+
+    WHEN("Requested to instantiate the gRPC manager identifier") {
+      ManagerPtr grpcManager = factory->createManager(
+          openassetio::grpc::GRPCManagerImplementationFactory::kIdentifiergRPCManager);
+
+      THEN("The correct insterface is returned") {
+        REQUIRE(grpcManager->identifier() == "org.openassetio.gRPC.manager");
+      }
+
+      AND_WHEN("Connected to the shared instance of the test server") {
+        openassetio::InfoDictionary settings;
+        settings[openassetio::grpc::GRPCManagerInterface::kSettingHandle] = "shared";
+        settings[openassetio::grpc::GRPCManagerInterface::kSettingChannel] = "0.0.0.0:51234";
+        grpcManager->initialize(settings);
+
+        THEN("The manager communicates with the server") {
+          REQUIRE(grpcManager->identifier() == kIdentifierBAL);
+        }
+      }
+    }
+  }
+}
 
 SCENARIO("gRPC Manager Factory relays methods and returns expected response") {
   GIVEN("A ManagerFactory configured with the gRPC implementation factory") {

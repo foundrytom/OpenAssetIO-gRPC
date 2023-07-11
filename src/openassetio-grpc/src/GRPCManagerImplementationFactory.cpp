@@ -3,6 +3,7 @@
 #include "openassetio-grpc/GRPCManagerImplementationFactory.hpp"
 
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -84,6 +85,8 @@ class GRPCManagerImplementationFactoryClient {
  * @todo Proper error handling, right now gRPC failures (including
  * server-side exceptions) are simply re-thrown as runtime_errors.
  */
+const std::string GRPCManagerImplementationFactory::kIdentifiergRPCManager =
+    GRPCManagerInterface::kIdentifiergRPCManager;
 
 GRPCManagerImplementationFactoryPtr GRPCManagerImplementationFactory::make(
     const std::string& channel, log::LoggerInterfacePtr logger) {
@@ -91,19 +94,35 @@ GRPCManagerImplementationFactoryPtr GRPCManagerImplementationFactory::make(
       new GRPCManagerImplementationFactory(channel, std::move(logger)));
 }
 
-GRPCManagerImplementationFactory::GRPCManagerImplementationFactory(const std::string& channel,
+GRPCManagerImplementationFactoryPtr GRPCManagerImplementationFactory::make(
+    log::LoggerInterfacePtr logger) {
+  return std::shared_ptr<GRPCManagerImplementationFactory>(
+      new GRPCManagerImplementationFactory("", std::move(logger)));
+}
+
+GRPCManagerImplementationFactory::GRPCManagerImplementationFactory(std::string channel,
                                                                    log::LoggerInterfacePtr logger)
     : ManagerImplementationFactoryInterface(std::move(logger)),
-      client_(new GRPCManagerImplementationFactoryClient(
-          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()))),
-      channel_(channel) {}
+      client_(nullptr),
+      channel_(std::move(channel)) {
+  if (!channel_.empty()) {
+    client_ = std::make_unique<GRPCManagerImplementationFactoryClient>(
+        ::grpc::CreateChannel(channel_, ::grpc::InsecureChannelCredentials()));
+  }
+}
 
 GRPCManagerImplementationFactory::~GRPCManagerImplementationFactory() = default;
 
 Identifiers GRPCManagerImplementationFactory::identifiers() { return client_->identifiers(); }
 
 managerApi::ManagerInterfacePtr GRPCManagerImplementationFactory::instantiate(
-    [[maybe_unused]] const Identifier& identifier) {
+    const Identifier& identifier) {
+  if (identifier == kIdentifiergRPCManager) {
+    return std::make_shared<GRPCManagerInterface>();
+  }
+  if (!client_) {
+    throw std::runtime_error("Request to initialize a remote manager without a configured server");
+  }
   GRPCManagerInterface::RemoteHandle handle = client_->instantiate(identifier);
   logger_->debugApi("gRPC: Instantiated '" + identifier + "' [" + handle + "]");
   return std::make_shared<GRPCManagerInterface>(handle, channel_);

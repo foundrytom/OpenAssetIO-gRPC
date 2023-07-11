@@ -32,6 +32,7 @@ import uuid
 
 import grpc
 
+import openassetio
 from openassetio.pluginSystem import PythonPluginSystemManagerImplementationFactory
 
 from . import openassetio_pb2
@@ -50,6 +51,7 @@ def uses_manager(func):
     It will append a positional argument with the manager to the wrapped
     function.
     """
+
     @wraps(func)
     def run(server, request, context, *args, **kwargs):
         handle = request.handle
@@ -68,6 +70,7 @@ def uses_host_session(func):
     information from the request and pass it to the method as an
     additional positional argument.
     """
+
     @wraps(func)
     def run(server, request, context, *args, **kwargs):
         host_session = utils.message_to_host_session(request.hostSession, server.logger)
@@ -82,6 +85,7 @@ def uses_context(func):
     (OpenAssetIO) Context from the request and pass it to
     the method as an additional positional argument.
     """
+
     @wraps(func)
     def run(server, request, context, *args, **kwargs):
         openassetio_context = utils.message_to_context(request.context)
@@ -90,19 +94,39 @@ def uses_context(func):
     return run
 
 
+class DummyHostInterface(openassetio.hostApi.HostInterface):
+    pass
+
+
 class Server(openassetio_pb2_grpc.ManagerProxyServicer):
     """
     An implementation of the OpenAssetIO gRPC Server.
 
     ManagerInterface instances are held in a dict, keyed by their handle.
     """
-    def __init__(self, logger):
+
+    def __init__(self, logger, withDefaultInstance=False):
         super().__init__()
 
         self.logger = logger
         self.managers = {}
 
         self.__implementation_factory = PythonPluginSystemManagerImplementationFactory(logger)
+
+        if withDefaultInstance:
+
+            shared_handle = "shared"
+            logger.debugApi(f"Instantiating default manager with handle '{shared_handle}'")
+
+            default_manager = openassetio.hostApi.ManagerFactory.defaultManagerForInterface(
+                DummyHostInterface(), self.__implementation_factory, logger
+            )
+
+            if default_manager:
+                logger.debugApi(f"Default manager is {default_manager.identifier()}")
+                self.managers[shared_handle] = default_manager._interface()
+            else:
+                logger.error(f"No Default manager configured, check env")
 
     ## ManagerFactory methods
 
@@ -142,6 +166,13 @@ class Server(openassetio_pb2_grpc.ManagerProxyServicer):
     def Info(self, request, context, manager):
         return openassetio_pb2.InfoResponse(info=utils.info_dict_to_message(manager.info()))
 
+    @uses_manager
+    @uses_host_session
+    def Settings(self, request, context, manager, host_session):
+        return openassetio_pb2.SettingsResponse(
+            info=utils.info_dict_to_message(manager.settings(host_session))
+        )
+
     @uses_host_session
     @uses_manager
     def Initialize(self, request, context, manager, host_session):
@@ -162,9 +193,13 @@ class Server(openassetio_pb2_grpc.ManagerProxyServicer):
     @uses_host_session
     @uses_manager
     def IsEntityReferenceString(
-        self, request, context, manager, host_session,
+        self,
+        request,
+        context,
+        manager,
+        host_session,
     ):
-        kwargs = { "is": manager.isEntityReferenceString(request.someString, host_session) }
+        kwargs = {"is": manager.isEntityReferenceString(request.someString, host_session)}
         return openassetio_pb2.IsEntityReferenceStringResponse(**kwargs)
 
     @uses_context

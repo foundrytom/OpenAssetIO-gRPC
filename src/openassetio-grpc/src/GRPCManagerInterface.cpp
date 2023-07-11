@@ -3,9 +3,11 @@
 #include "openassetio-grpc/GRPCManagerInterface.hpp"
 
 #include <grpcpp/grpcpp.h>
+#include <memory>
 #include <openassetio/BatchElementError.hpp>
 #include <openassetio/managerApi/ManagerInterface.hpp>
 #include <openassetio/trait/collection.hpp>
+#include <variant>
 
 #include "openassetio.grpc.pb.h"
 #include "openassetio.pb.h"
@@ -78,6 +80,21 @@ class GRPCManagerInterfaceClient {
       throw std::runtime_error(status.error_message());
     }
     return msgToInfoDictionary(response.info());
+  }
+
+  InfoDictionary settings(const managerApi::HostSessionPtr &hostSession) {
+    openassetio_grpc_proto::SettingsRequest request;
+    openassetio_grpc_proto::SettingsResponse response;
+    ClientContext context;
+
+    request.set_handle(handle_);
+    hostSessionToMsg(hostSession, request.mutable_hostsession());
+
+    Status status = stub_->Settings(&context, request, &response);
+    if (!status.ok()) {
+      throw std::runtime_error(status.error_message());
+    }
+    return msgToInfoDictionary(response.settings());
   }
 
   void initialize(const InfoDictionary &managerSettings,
@@ -211,10 +228,10 @@ class GRPCManagerInterfaceClient {
   }
 
   void register_(const EntityReferences &entityReferences,
-                const trait::TraitsDatas &entityTraitsDatas, const ContextConstPtr &context,
-                const managerApi::HostSessionPtr &hostSession,
-                const GRPCManagerInterface::RegisterSuccessCallback &successCallback,
-                const GRPCManagerInterface::BatchElementErrorCallback &errorCallback) {
+                 const trait::TraitsDatas &entityTraitsDatas, const ContextConstPtr &context,
+                 const managerApi::HostSessionPtr &hostSession,
+                 const GRPCManagerInterface::RegisterSuccessCallback &successCallback,
+                 const GRPCManagerInterface::BatchElementErrorCallback &errorCallback) {
     openassetio_grpc_proto::RegisterRequest request;
     openassetio_grpc_proto::RegisterResponse response;
     ClientContext clientContext;
@@ -281,42 +298,106 @@ class GRPCManagerInterfaceClient {
  * objects.
  */
 
+namespace {
+GRPCManagerInterfaceClient *newClient(const InfoDictionary &settings) {
+  const openassetio::Str handle =
+      std::get<openassetio::Str>(settings.at(GRPCManagerInterface::kSettingHandle));
+  const openassetio::Str channel =
+      std::get<openassetio::Str>(settings.at(GRPCManagerInterface::kSettingChannel));
+  return new GRPCManagerInterfaceClient(
+      ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()), handle);
+}
+
+}  // namespace
+
+const std::string GRPCManagerInterface::kIdentifiergRPCManager = "org.openassetio.gRPC.manager";
+
+const std::string GRPCManagerInterface::kSettingChannel = "channel";
+const std::string GRPCManagerInterface::kSettingHandle = "handle";
+
+GRPCManagerInterface::GRPCManagerInterface() : client_(nullptr), ownsHandle_(false) {
+  settings_[kSettingHandle] = "shared";
+  settings_[kSettingChannel] = "";
+}
+
 GRPCManagerInterface::GRPCManagerInterface(GRPCManagerInterface::RemoteHandle handle,
                                            const std::string &channel)
-    : client_(new GRPCManagerInterfaceClient(
-          ::grpc::CreateChannel(channel, ::grpc::InsecureChannelCredentials()),
-          std::move(handle))) {}
+    : ownsHandle_(true) {
+  settings_[kSettingHandle] = handle;
+  settings_[kSettingChannel] = channel;
+  client_ = std::unique_ptr<GRPCManagerInterfaceClient>(newClient(settings_));
+}
 
 GRPCManagerInterface::~GRPCManagerInterface() {
-  try {
-    client_->destroy();
-  } catch (...) {
+  if (client_ && ownsHandle_) {
+    try {
+      client_->destroy();
+    } catch (...) {
+    }
   }
 }
 
-Identifier GRPCManagerInterface::identifier() const { return client_->identifier(); }
+Identifier GRPCManagerInterface::identifier() const {
+  if (client_) {
+    return client_->identifier();
+  }
+  return kIdentifiergRPCManager;
+}
 
-Str GRPCManagerInterface::displayName() const { return client_->displayName(); }
+Str GRPCManagerInterface::displayName() const {
+  if (client_) {
+    return client_->displayName();
+  }
+  return "GRPC Client";
+}
 
-InfoDictionary GRPCManagerInterface::info() const { return client_->info(); }
+InfoDictionary GRPCManagerInterface::info() const {
+  if (client_) {
+    return client_->info();
+  }
+  return {};
+}
+
+InfoDictionary GRPCManagerInterface::settings(
+    const managerApi::HostSessionPtr &hostSession) const {
+  if (client_) {
+    return client_->settings(hostSession);
+  }
+  return settings_;
+}
+
+void GRPCManagerInterface::initialize(
+    InfoDictionary managerSettings,
+    const managerApi::HostSessionPtr &hostSession) {
+  if (ownsHandle_) {
+    client_->initialize(managerSettings, hostSession);
+  } else {
+    // TODO(tc): Don't recreate connection if the details are the same
+    for(auto [k, v] : managerSettings) {
+      settings_.insert_or_assign(k, v);
+    }
+    client_ = std::unique_ptr<GRPCManagerInterfaceClient>(newClient(settings_));
+  }
+}
+
 
 trait::TraitsDatas GRPCManagerInterface::managementPolicy(
     [[maybe_unused]] const trait::TraitSets &traitSets,
     [[maybe_unused]] const ContextConstPtr &context,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
+  if (!client_) {
+    throw std::runtime_error("Method called before initialization");
+  }
   return client_->managementPolicy(traitSets, context, hostSession);
 }
 
 bool GRPCManagerInterface::isEntityReferenceString(
     [[maybe_unused]] const Str &someString,
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
+  if (!client_) {
+    throw std::runtime_error("Method called before initialization");
+  }
   return client_->isEntityReferenceString(someString, hostSession);
-}
-
-void GRPCManagerInterface::initialize(
-    [[maybe_unused]] InfoDictionary managerSettings,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) {
-  client_->initialize(managerSettings, hostSession);
 }
 
 void GRPCManagerInterface::resolve(
@@ -326,6 +407,9 @@ void GRPCManagerInterface::resolve(
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const ResolveSuccessCallback &successCallback,
     [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  if (!client_) {
+    throw std::runtime_error("Method called before initialization");
+  }
   client_->resolve(entityReferences, traitSet, context, hostSession, successCallback,
                    errorCallback);
 }
@@ -337,6 +421,9 @@ void GRPCManagerInterface::preflight(
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const PreflightSuccessCallback &successCallback,
     [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  if (!client_) {
+    throw std::runtime_error("Method called before initialization");
+  }
   client_->preflight(entityReferences, traitSet, context, hostSession, successCallback,
                      errorCallback);
 }
@@ -348,8 +435,10 @@ void GRPCManagerInterface::register_(
     [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
     [[maybe_unused]] const RegisterSuccessCallback &successCallback,
     [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+  if (!client_) {
+    throw std::runtime_error("Method called before initialization");
+  }
   client_->register_(entityReferences, entityTraitsDatas, context, hostSession, successCallback,
-                    errorCallback);
+                     errorCallback);
 }
-
 };  // namespace openassetio::grpc

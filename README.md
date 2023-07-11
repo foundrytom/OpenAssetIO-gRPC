@@ -10,6 +10,11 @@ side-effects on its runtime are minimised.
 > the potential benefits, and costs of using gRPC to achieve this goal.
 > The code is by no means well robust or well tested.
 
+Bonus: The included `.proto` allows a gRPC implementation of the
+OpenAssetIO `ManagerInterface` in C#, Dart, Go, Java, Kotlin, Node,
+Objective-C, PHP, Ruby without explicit support in the core language
+layers.
+
 ## Background
 
 The use of Python in common deployment scenarios can cause assorted
@@ -46,18 +51,20 @@ a custom `ManagerInterface` shim, that proxies all API calls to the
 configured gRPC endpoint - assuming it implements the service defined in
 [openassetio.proto](./src/openassetio.proto).
 
-In theory, this shim could be manually instantiated by other means, but
-this is currently unsupported.
-
 There are three components to this project:
 
 - The `openassetio-grpc` library, that provides an SDK for OpenAssetIO
   Hosts.
-- The `openassetio-grpc-server` binary that instantiates managers to
-  service the bridged API requests.
+- The `openassetio-grpc-server` binary (or Python module) that
+  instantiates managers to service the bridged API requests.
 - The `openassetio-grpc-test` high-level integration test suite.
 - The `openassetio-grpc-perftest` benchmark test that compares direct
   and gRPC bridged python manager interactions.
+
+The Python server implementation can be run in 'out-of-process' mode, to
+instantiate manager instanced on demand, or in 'shared' mode, where an
+instance of the `$OPENASSETIO_DEFAULT_CONFIG` manager is available to an
+arbitrary number of remote clients via the `shared` handle.
 
 ### Building
 
@@ -112,13 +119,24 @@ python -m pip install ./src/server-python
 python -m openassetio_grpc_server
 ```
 
-There is also a less featured/experimental C++ Server available too:
+The `openassetio-grpc-server` receives requests over gRPC and wrangles
+its own `ManagerFactory` to initialize host-requested managers,
+forwarding subsequent requests to the appropriate instance. Each server
+can be multi-tenanted, managing any number of discrete managers.
 
-The `openassetio-grpc-server` binary receives requests over gRPC and
-fulfills them using managers it instantiates using the usual means (i.e
-the `PythonPluginSystemManagerImplementationFactory`). As such, it links
-to Python. This means we need to set up a few env vars before it can be
-run:
+If you wish to provision a shared instance of the manager defined by
+`$OPENASSETIO_DEFAULT_CONFIG`, then append the `-d` flag. This also
+initializes the default manager, and routes requests to the `shared`
+handle to it. A host requesting the factory to instantiate the
+`org.openassetio.gRPC.manager` manager, initializing with a suitable
+`channel` addressing the server will then be able to access this
+instance, locally or across a network. This has little practical use
+outside of the ad-hoc provision of multi-client testing when using a
+simple, single-tenanted manager such as BAL.
+
+There is also a less featured/experimental C++ Server available, with
+limited API support.
+
 
 ```shell
 # Required for the embedded interpreter
@@ -173,7 +191,7 @@ This requires BAL, if you're using the python server, you can use Pip to
 install it:
 
 ```shell
-python -m pip install openassetio_manager_bal
+python -m pip install openassetio-manager-bal
 ```
 
 Running the tests should hopefully then pass.
@@ -212,4 +230,6 @@ All tests passed (7 assertions in 1 test case)
 - Proper test coverage.
 - Support manager state objects.
 - Allow the shim interface to be user-configured without the custom
-  factory.
+  factory (needs the C++ plugin system, so the it can be registered as a
+  normal manager implementation without the host needing to adopt the
+  GRPC factory).
