@@ -382,9 +382,9 @@ void GRPCManagerInterface::initialize(
 
 
 trait::TraitsDatas GRPCManagerInterface::managementPolicy(
-    [[maybe_unused]] const trait::TraitSets &traitSets,
-    [[maybe_unused]] const ContextConstPtr &context,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
+    const trait::TraitSets &traitSets,
+    const ContextConstPtr &context,
+    const managerApi::HostSessionPtr &hostSession) const {
   if (!client_) {
     throw std::runtime_error("Method called before initialization");
   }
@@ -392,8 +392,8 @@ trait::TraitsDatas GRPCManagerInterface::managementPolicy(
 }
 
 bool GRPCManagerInterface::isEntityReferenceString(
-    [[maybe_unused]] const Str &someString,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession) const {
+    const Str &someString,
+    const managerApi::HostSessionPtr &hostSession) const {
   if (!client_) {
     throw std::runtime_error("Method called before initialization");
   }
@@ -401,12 +401,12 @@ bool GRPCManagerInterface::isEntityReferenceString(
 }
 
 void GRPCManagerInterface::resolve(
-    [[maybe_unused]] const EntityReferences &entityReferences,
-    [[maybe_unused]] const trait::TraitSet &traitSet,
-    [[maybe_unused]] const ContextConstPtr &context,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
-    [[maybe_unused]] const ResolveSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+    const EntityReferences &entityReferences,
+    const trait::TraitSet &traitSet,
+    const ContextConstPtr &context,
+    const managerApi::HostSessionPtr &hostSession,
+    const ResolveSuccessCallback &successCallback,
+    const BatchElementErrorCallback &errorCallback) {
   if (!client_) {
     throw std::runtime_error("Method called before initialization");
   }
@@ -415,12 +415,12 @@ void GRPCManagerInterface::resolve(
 }
 
 void GRPCManagerInterface::preflight(
-    [[maybe_unused]] const EntityReferences &entityReferences,
-    [[maybe_unused]] const trait::TraitSet &traitSet,
-    [[maybe_unused]] const ContextConstPtr &context,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
-    [[maybe_unused]] const PreflightSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+    const EntityReferences &entityReferences,
+    const trait::TraitSet &traitSet,
+    const ContextConstPtr &context,
+    const managerApi::HostSessionPtr &hostSession,
+    const PreflightSuccessCallback &successCallback,
+    const BatchElementErrorCallback &errorCallback) {
   if (!client_) {
     throw std::runtime_error("Method called before initialization");
   }
@@ -429,12 +429,12 @@ void GRPCManagerInterface::preflight(
 }
 
 void GRPCManagerInterface::register_(
-    [[maybe_unused]] const EntityReferences &entityReferences,
-    [[maybe_unused]] const trait::TraitsDatas &entityTraitsDatas,
-    [[maybe_unused]] const ContextConstPtr &context,
-    [[maybe_unused]] const managerApi::HostSessionPtr &hostSession,
-    [[maybe_unused]] const RegisterSuccessCallback &successCallback,
-    [[maybe_unused]] const BatchElementErrorCallback &errorCallback) {
+    const EntityReferences &entityReferences,
+    const trait::TraitsDatas &entityTraitsDatas,
+    const ContextConstPtr &context,
+    const managerApi::HostSessionPtr &hostSession,
+    const RegisterSuccessCallback &successCallback,
+    const BatchElementErrorCallback &errorCallback) {
   if (!client_) {
     throw std::runtime_error("Method called before initialization");
   }
