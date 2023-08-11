@@ -218,7 +218,7 @@ class Server(openassetio_pb2_grpc.ManagerProxyServicer):
         def error(idx, batch_element_error):
             result.append(
                 openassetio_pb2.ResolveResponse.ResultOrErrorMsg(
-                    index=idx, result=utils.batch_element_error_to_message(batch_element_error)
+                    index=idx, error=utils.batch_element_error_to_message(batch_element_error)
                 )
             )
 
@@ -249,7 +249,7 @@ class Server(openassetio_pb2_grpc.ManagerProxyServicer):
         def error(idx, batch_element_error):
             result.append(
                 openassetio_pb2.PreflightResponse.ResultOrErrorMsg(
-                    index=idx, result=utils.batch_element_error_to_message(batch_element_error)
+                    index=idx, error=utils.batch_element_error_to_message(batch_element_error)
                 )
             )
 
@@ -280,7 +280,7 @@ class Server(openassetio_pb2_grpc.ManagerProxyServicer):
         def error(idx, batch_element_error):
             result.append(
                 openassetio_pb2.RegisterResponse.ResultOrErrorMsg(
-                    index=idx, result=utils.batch_element_error_to_message(batch_element_error)
+                    index=idx, error=utils.batch_element_error_to_message(batch_element_error)
                 )
             )
 
